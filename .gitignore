@@ -1,8 +1,38 @@
-﻿.env
-.env.local
+# Python
 __pycache__/
 *.pyc
-node_modules/
-.next/
+*.pyo
+*.pyd
+.Python
+venv/
+env/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
 *.pkl
 *.joblib
+demo_adult.csv
+
+# Environment secrets — NEVER commit these
+.env
+.env.local
+.env.production
+
+# Next.js
+.next/
+out/
+node_modules/
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+
+# Temp files
+*.tmp
+/tmp/
