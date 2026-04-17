@@ -32,6 +32,8 @@ async def run_root_cause_agent(df: pd.DataFrame, decision_column: str) -> dict:
         shap_values = explainer.shap_values(sample)
         if isinstance(shap_values, list):
             sv = shap_values[1]
+        elif hasattr(shap_values, "shape") and len(shap_values.shape) == 3:
+            sv = shap_values[:, :, 1]
         else:
             sv = shap_values
         importances = np.abs(sv).mean(axis=0)

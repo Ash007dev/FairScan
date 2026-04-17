@@ -21,7 +21,10 @@ def find_sensitive_columns(df: pd.DataFrame, decision_col: str) -> list:
         col_clean = col.lower().replace("_", "").replace("-", "").replace(" ", "")
         if any(word in col_clean for word in SENSITIVE_WORDS):
             found.append(col)
-    return list(set(found))
+    found = list(set(found))
+    # Sort based on SENSITIVE_WORDS index to prioritize words like gender, sex, race
+    found.sort(key=lambda c: next((i for i, word in enumerate(SENSITIVE_WORDS) if word in c.lower().replace("_", "").replace("-", "").replace(" ", "")), 999))
+    return found
 
 
 def compute_fairness_score(rates: list) -> int:
