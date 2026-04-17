@@ -7,11 +7,13 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from gemini_client import call_gemini
 
+# ── Prompt template ───────────────────────────────────────────────────────────
+# Variables injected: {score}, {row_count}, {top_col}, {group_rates}
 MEMO_PROMPT = """Write a bias audit memo for a CEO who is not technical.
 Do not use technical jargon. Use real numbers from the data provided.
 
 Audit data:
-Fairness Score: {score}
+Fairness Score: {score}/100
 Row Count: {row_count}
 Top Bias Driver Column: {top_col}
 Group Rates: {group_rates}
@@ -40,19 +42,28 @@ RISK IF IGNORED:
 
 
 async def run_report_writer_agent(stat_result: dict, root_cause_result: dict) -> str:
+    # yield control so FastAPI's async loop stays responsive
     await asyncio.sleep(0)
 
-    score = stat_result.get("fairness_score", 0)
-    row_count = stat_result.get("row_count", 0)
-    top_col = root_cause_result.get("top_bias_driver", "unknown")
+    # Pull the values we inject into the prompt
+    score       = stat_result.get("fairness_score", 0)
+    row_count   = stat_result.get("row_count", 0)
+    top_col     = root_cause_result.get("top_bias_driver", "unknown")
     group_rates = stat_result.get("results_per_group", {})
-    
-    prompt = MEMO_PROMPT.format(data=json.dumps(data, indent=2))
+
+    prompt = MEMO_PROMPT.format(
+        score=score,
+        row_count=row_count,
+        top_col=top_col,
+        group_rates=json.dumps(group_rates)
+    )
 
     try:
         # temperature=0.3 → slightly creative prose but still consistent
         memo = call_gemini(prompt, temperature=0.3, agent_name="ReportWriter")
+
     except Exception as e:
+        # Gemini completely failed — use the f-string fallback so the demo still works
         print(f"[ReportWriter] Gemini completely failed: {e} — using f-string fallback")
         memo = f"""EXECUTIVE SUMMARY:
 The model shows a fairness score of {score}/100 based on {row_count} rows analyzed, indicating significant bias. The primary cause is the "{top_col}" column.
@@ -60,7 +71,7 @@ The model shows a fairness score of {score}/100 based on {row_count} rows analyz
 KEY FINDINGS:
 - Overall fairness score: {score}/100 (below 75 requires immediate action)
 - Primary bias driver: "{top_col}" column dominates predictions
-- Group disparities detected across demographic attributes: {group_rates}
+- Group disparities detected across demographic attributes: {json.dumps(group_rates)}
 
 ROOT CAUSE:
 The "{top_col}" column has disproportionate influence on model predictions, creating systematically different outcomes across demographic groups.
