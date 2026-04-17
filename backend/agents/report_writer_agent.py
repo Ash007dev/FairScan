@@ -7,16 +7,19 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from gemini_client import call_gemini
 
-MEMO_PROMPT = """Write a bias audit memo for a CEO or compliance officer.
-They are not data scientists. Use plain English. Be direct. Use real numbers.
+MEMO_PROMPT = """Write a bias audit memo for a CEO who is not technical.
+Do not use technical jargon. Use real numbers from the data provided.
 
 Audit data:
-{data}
+Fairness Score: {score}
+Row Count: {row_count}
+Top Bias Driver Column: {top_col}
+Group Rates: {group_rates}
 
 Write exactly these sections with these exact headings:
 
 EXECUTIVE SUMMARY:
-(2 sentences — what was found and how serious it is)
+(2 sentences max — what was found and how serious it is)
 
 KEY FINDINGS:
 - (bullet with real number)
@@ -33,11 +36,10 @@ REQUIRED ACTIONS:
 
 RISK IF IGNORED:
 (1 sentence naming the specific legal consequence)
+"""
 
-Do not use jargon. Do not hedge. Every number must come from the data provided."""
 
-
-async def run_report_writer_agent(stat_result: dict, root_cause_result: dict, model_name: str) -> dict:
+async def run_report_writer_agent(stat_result: dict, root_cause_result: dict) -> str:
     await asyncio.sleep(0)
 
     data = {
@@ -58,27 +60,45 @@ async def run_report_writer_agent(stat_result: dict, root_cause_result: dict, mo
         print(f"[ReportWriter] Gemini completely failed: {e} — using f-string fallback")
         score = stat_result["fairness_score"]
         driver = root_cause_result.get("top_bias_driver", "unknown")
+    score = stat_result.get("fairness_score", 0)
+    row_count = stat_result.get("row_count", 0)
+    top_col = root_cause_result.get("top_bias_driver", "unknown")
+    group_rates = stat_result.get("results_per_group", {})
+    
+    model = genai.GenerativeModel(
+        model_name="gemini-1.5-pro",
+        generation_config=genai.GenerationConfig(temperature=0.3)
+    )
+
+    try:
+        response = model.generate_content(
+            MEMO_PROMPT.format(
+                score=score,
+                row_count=row_count,
+                top_col=top_col,
+                group_rates=json.dumps(group_rates)
+            )
+        )
+        memo = response.text.strip()
+    except Exception as e:
+        print(f"Report writer Gemini error: {e} — using fallback")
         memo = f"""EXECUTIVE SUMMARY:
-The {model_name} shows a fairness score of {score}/100, indicating significant bias. The primary cause is the "{driver}" column.
+The model shows a fairness score of {score}/100 based on {row_count} rows analyzed, indicating significant bias. The primary cause is the "{top_col}" column.
 
 KEY FINDINGS:
 - Overall fairness score: {score}/100 (below 75 requires immediate action)
-- Primary bias driver: "{driver}" column dominates predictions
-- Group disparities detected across demographic attributes
+- Primary bias driver: "{top_col}" column dominates predictions
+- Group disparities detected across demographic attributes: {group_rates}
 
 ROOT CAUSE:
-The "{driver}" column has disproportionate influence on model predictions, creating systematically different outcomes across demographic groups.
+The "{top_col}" column has disproportionate influence on model predictions, creating systematically different outcomes across demographic groups.
 
 REQUIRED ACTIONS:
-1. Engineering: Remove or reweight the "{driver}" column and retrain the model
+1. Engineering: Remove or reweight the "{top_col}" column and retrain the model
 2. HR / Legal: Conduct adverse impact analysis and document findings
 3. Leadership: Do not deploy this model until fairness score exceeds 75/100
 
 RISK IF IGNORED:
 Deployment of this model may constitute unlawful discrimination under applicable employment and lending regulations."""
 
-    return {
-        "memo": memo,
-        "model_name": model_name,
-        "fairness_score": stat_result["fairness_score"],
-    }
+    return memo

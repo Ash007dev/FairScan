@@ -44,7 +44,7 @@ async def run_audit(df, decision_column, model_name, audit_id, store):
 
     results2 = await asyncio.gather(
         run_legal_mapper_agent(stat_result, root_cause_result),
-        run_report_writer_agent(stat_result, root_cause_result, model_name),
+        run_report_writer_agent(stat_result, root_cause_result),
         return_exceptions=True
     )
 
@@ -73,6 +73,11 @@ async def run_audit(df, decision_column, model_name, audit_id, store):
         }
     else:
         update("report_writer", "done")
+        report_result = {
+            "memo": report_result,
+            "model_name": model_name,
+            "fairness_score": stat_result["fairness_score"],
+        }
 
     # Remove internal model objects before storing (not JSON serializable)
     clean_stat = {k: v for k, v in stat_result.items() if not k.startswith("_")}
