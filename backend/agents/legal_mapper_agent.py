@@ -1,11 +1,11 @@
-import google.generativeai as genai
 import json
-import os
 import asyncio
-from dotenv import load_dotenv
+import sys
+import os
 
-load_dotenv()
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+# Allow importing gemini_client from the parent backend/ directory
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+from gemini_client import call_gemini
 
 # ── Prompt template ──────────────────────────────────────────────────────────
 # {findings} gets replaced with the actual numbers before sending to Gemini
@@ -68,38 +68,7 @@ def _score_based_fallback(fairness_score: int) -> list:
     return violations
 
 
-# ── Gemini call with retry + model fallback ──────────────────────────────────
-def _call_gemini_with_retry(prompt: str, max_retries: int = 2) -> str:
-    """
-    Tries gemini-1.5-pro first. If it fails twice, switches to gemini-1.5-flash.
-    Returns the raw text response, or raises an exception if everything fails.
-    """
-    models_to_try = ["gemini-1.5-pro", "gemini-1.5-flash"]
-
-    for model_name in models_to_try:
-        for attempt in range(1, max_retries + 1):
-            try:
-                print(f"[LegalMapper] Trying {model_name}, attempt {attempt}...")
-                model = genai.GenerativeModel(
-                    model_name=model_name,
-                    generation_config=genai.GenerationConfig(temperature=0.1)
-                )
-                response = model.generate_content(prompt)
-                raw_text = response.text.strip()
-
-                # Log raw response so we can debug easily during demo
-                print(f"[LegalMapper] Raw Gemini response:\n{raw_text}\n")
-
-                return raw_text
-
-            except Exception as e:
-                print(f"[LegalMapper] {model_name} attempt {attempt} failed: {e}")
-                if attempt < max_retries:
-                    # Wait 1 second before retrying
-                    import time
-                    time.sleep(1)
-
-    raise RuntimeError("All Gemini models and retries exhausted.")
+# Retry + model-switch logic now lives in gemini_client.py (shared across all agents)
 
 
 # ── JSON parsing with fence stripping ────────────────────────────────────────
@@ -139,7 +108,7 @@ async def run_legal_mapper_agent(stat_result: dict, root_cause_result: dict) -> 
     violations = None
 
     try:
-        raw_text = _call_gemini_with_retry(prompt)
+        raw_text = call_gemini(prompt, temperature=0.1, agent_name="LegalMapper")
         violations = _parse_gemini_json(raw_text)
         print(f"[LegalMapper] Successfully parsed {len(violations)} violations from Gemini.")
 

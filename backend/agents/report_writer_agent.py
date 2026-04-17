@@ -1,11 +1,11 @@
-import google.generativeai as genai
 import json
-import os
 import asyncio
-from dotenv import load_dotenv
+import sys
+import os
 
-load_dotenv()
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+# Allow importing gemini_client from the parent backend/ directory
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+from gemini_client import call_gemini
 
 MEMO_PROMPT = """Write a bias audit memo for a CEO or compliance officer.
 They are not data scientists. Use plain English. Be direct. Use real numbers.
@@ -49,18 +49,13 @@ async def run_report_writer_agent(stat_result: dict, root_cause_result: dict, mo
         "top_shap_features": root_cause_result.get("feature_ranking", [])[:5],
     }
 
-    model = genai.GenerativeModel(
-        model_name="gemini-1.5-pro",
-        generation_config=genai.GenerationConfig(temperature=0.3)
-    )
+    prompt = MEMO_PROMPT.format(data=json.dumps(data, indent=2))
 
     try:
-        response = model.generate_content(
-            MEMO_PROMPT.format(data=json.dumps(data, indent=2))
-        )
-        memo = response.text
+        # temperature=0.3 → slightly creative prose but still consistent
+        memo = call_gemini(prompt, temperature=0.3, agent_name="ReportWriter")
     except Exception as e:
-        print(f"Report writer Gemini error: {e} — using fallback")
+        print(f"[ReportWriter] Gemini completely failed: {e} — using f-string fallback")
         score = stat_result["fairness_score"]
         driver = root_cause_result.get("top_bias_driver", "unknown")
         memo = f"""EXECUTIVE SUMMARY:
