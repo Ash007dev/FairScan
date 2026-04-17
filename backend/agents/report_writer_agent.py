@@ -1,11 +1,11 @@
-import google.generativeai as genai
 import json
-import os
 import asyncio
-from dotenv import load_dotenv
+import sys
+import os
 
-load_dotenv()
-genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+# Allow importing gemini_client from the parent backend/ directory
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
+from gemini_client import call_gemini
 
 MEMO_PROMPT = """Write a bias audit memo for a CEO who is not technical.
 Do not use technical jargon. Use real numbers from the data provided.
@@ -47,23 +47,13 @@ async def run_report_writer_agent(stat_result: dict, root_cause_result: dict) ->
     top_col = root_cause_result.get("top_bias_driver", "unknown")
     group_rates = stat_result.get("results_per_group", {})
     
-    model = genai.GenerativeModel(
-        model_name="gemini-1.5-pro",
-        generation_config=genai.GenerationConfig(temperature=0.3)
-    )
+    prompt = MEMO_PROMPT.format(data=json.dumps(data, indent=2))
 
     try:
-        response = model.generate_content(
-            MEMO_PROMPT.format(
-                score=score,
-                row_count=row_count,
-                top_col=top_col,
-                group_rates=json.dumps(group_rates)
-            )
-        )
-        memo = response.text.strip()
+        # temperature=0.3 → slightly creative prose but still consistent
+        memo = call_gemini(prompt, temperature=0.3, agent_name="ReportWriter")
     except Exception as e:
-        print(f"Report writer Gemini error: {e} — using fallback")
+        print(f"[ReportWriter] Gemini completely failed: {e} — using f-string fallback")
         memo = f"""EXECUTIVE SUMMARY:
 The model shows a fairness score of {score}/100 based on {row_count} rows analyzed, indicating significant bias. The primary cause is the "{top_col}" column.
 
