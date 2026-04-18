@@ -7,8 +7,23 @@ from agents.report_writer_agent import run_report_writer_agent
 
 
 async def run_audit(df, decision_column, model_name, audit_id, store):
+    # Terminal colors for beautiful logging
+    BLUE = '\033[94m'
+    GREEN = '\033[92m'
+    YELLOW = '\033[93m'
+    RED = '\033[91m'
+    RESET = '\033[0m'
+
     def update(agent, status):
         store[audit_id]["progress"][agent] = status
+        
+        # Print beautiful logs to the terminal
+        colors = {"running": YELLOW, "done": GREEN, "error": RED}
+        color = colors.get(status, RESET)
+        status_text = status.upper()
+        print(f"{BLUE}[{audit_id[:8]}]{RESET} ⚙️  {agent.replace('_', ' ').title():<18} | {color}{status_text}{RESET}")
+
+    print(f"\n{GREEN}🚀 STARTING SCAN:{RESET} {model_name} (Audit ID: {audit_id})")
 
     # ── Stage 1: run stat and root_cause in parallel ──
     update("stat", "running")
@@ -54,7 +69,7 @@ async def run_audit(df, decision_column, model_name, audit_id, store):
     # Legal mapper failure is non-fatal — use a fallback
     if isinstance(legal_result, Exception):
         update("legal_mapper", "error")
-        print(f"Legal mapper failed (using fallback): {legal_result}")
+        print(f"{RED}⚠️ Legal mapper failed (using fallback): {legal_result}{RESET}")
         legal_result = {
             "violations": [],
             "summary": "Legal analysis unavailable due to an error."
@@ -65,7 +80,7 @@ async def run_audit(df, decision_column, model_name, audit_id, store):
     # Report writer failure is non-fatal — use a fallback
     if isinstance(report_result, Exception):
         update("report_writer", "error")
-        print(f"Report writer failed (using fallback): {report_result}")
+        print(f"{RED}⚠️ Report writer failed (using fallback): {report_result}{RESET}")
         report_result = {
             "memo": "Report generation failed. Please review the statistical findings above.",
             "model_name": model_name,
@@ -78,6 +93,8 @@ async def run_audit(df, decision_column, model_name, audit_id, store):
             "model_name": model_name,
             "fairness_score": stat_result["fairness_score"],
         }
+
+    print(f"{GREEN}✅ SCAN COMPLETE:{RESET} {model_name} finished successfully.\n")
 
     # Remove internal model objects before storing (not JSON serializable)
     clean_stat = {k: v for k, v in stat_result.items() if not k.startswith("_")}

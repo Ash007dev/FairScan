@@ -36,6 +36,12 @@ async def run_root_cause_agent(df: pd.DataFrame, decision_column: str) -> dict:
             sv = shap_values[:, :, 1]
         else:
             sv = shap_values
+            
+        # FIX: Ensure sv is 2D (samples, features) before taking the mean.
+        # If SHAP returns (samples, features, classes), extract the target class.
+        if len(sv.shape) == 3:
+            sv = sv[:, :, 1] if sv.shape[2] > 1 else sv[:, :, 0]
+            
         importances = np.abs(sv).mean(axis=0)
     except Exception:
         # Fallback: use built-in feature importances

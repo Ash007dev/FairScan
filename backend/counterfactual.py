@@ -21,7 +21,12 @@ def run_counterfactual(row: dict, flip_column: str, flip_to: str, model_data: st
         # Keep only the columns the model was trained on
         for col in feature_cols:
             if col not in df.columns:
-                df[col] = 0
+                # FIX: If the missing column is categorical, set it to "unknown" 
+                # instead of 0. Otherwise, OrdinalEncoder crashes on the integer!
+                if col in cat_cols:
+                    df[col] = "unknown"
+                else:
+                    df[col] = 0
 
         df = df[feature_cols].copy()
 

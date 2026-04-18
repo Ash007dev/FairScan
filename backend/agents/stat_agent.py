@@ -3,6 +3,7 @@ import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.preprocessing import OrdinalEncoder, LabelEncoder
 import asyncio
+from fairlearn.metrics import demographic_parity_difference, equalized_odds_difference
 
 SENSITIVE_WORDS = [
     "gender", "sex", "race", "ethnicity", "age", "religion",
@@ -72,10 +73,24 @@ async def run_stat_agent(df: pd.DataFrame, decision_column: str) -> dict:
             rates = list(group_rates.values())
             all_scores.append(compute_fairness_score(rates))
 
+        # We try to calculate mathematically strict bias metrics per group
+        # Wrapped in a try/except so if missing data causes a math error, the demo stays alive!
+        dp_diff = None
+        eo_diff = None
+        try:
+            # demographic_parity measures if selection rates match across groups 
+            dp_diff = float(round(demographic_parity_difference(y, y_pred, sensitive_features=df[col].astype(str)), 4))
+            # equalized_odds measures if true positive/false positive rates match across groups
+            eo_diff = float(round(equalized_odds_difference(y, y_pred, sensitive_features=df[col].astype(str)), 4))
+        except Exception as e:
+            print(f"Could not compute fairlearn metrics for {col}: {e}")
+
         results_per_group[col] = {
             "groups": group_rates,
             "most_approved_group": max(group_rates, key=group_rates.get) if group_rates else "unknown",
             "least_approved_group": min(group_rates, key=group_rates.get) if group_rates else "unknown",
+            "demographic_parity_difference": dp_diff,
+            "equalized_odds_difference": eo_diff,
         }
 
     fairness_score = int(np.mean(all_scores)) if all_scores else 50
