@@ -30,21 +30,33 @@ async def run_root_cause_agent(df: pd.DataFrame, decision_column: str) -> dict:
         explainer = shap.TreeExplainer(model)
         sample = X.sample(min(500, len(X)), random_state=42)
         shap_values = explainer.shap_values(sample)
+
+        # SHAP output formats vary by version and model type:
+        # 1. List of arrays (one per class)
+        # 2. 3D array (samples, features, classes)
+        # 3. 2D array (samples, features)
+        
         if isinstance(shap_values, list):
-            sv = shap_values[1]
-        elif hasattr(shap_values, "shape") and len(shap_values.shape) == 3:
-            sv = shap_values[:, :, 1]
+            # For binary/multi-class, usually index 1 is the 'positive' or 'higher' class
+            sv = shap_values[1] if len(shap_values) > 1 else shap_values[0]
+        elif hasattr(shap_values, "values"): # new SHAP Explainer format
+            sv = shap_values.values
+            if len(sv.shape) == 3:
+                sv = sv[:, :, 1] if sv.shape[2] > 1 else sv[:, :, 0]
         else:
             sv = shap_values
-            
-        # FIX: Ensure sv is 2D (samples, features) before taking the mean.
-        # If SHAP returns (samples, features, classes), extract the target class.
-        if len(sv.shape) == 3:
-            sv = sv[:, :, 1] if sv.shape[2] > 1 else sv[:, :, 0]
-            
+
+        if len(np.shape(sv)) == 3:
+            sv = sv[:, :, 1] if np.shape(sv)[2] > 1 else sv[:, :, 0]
+
+        # Calculate mean absolute importance per feature
         importances = np.abs(sv).mean(axis=0)
-    except Exception:
-        # Fallback: use built-in feature importances
+        
+        # Ensure it's a flat list of floats
+        if hasattr(importances, "flatten"):
+            importances = importances.flatten()
+    except Exception as e:
+        print(f"[RootCause] SHAP failed, using fallback importances: {e}")
         importances = model.feature_importances_
 
     feature_importance = dict(zip(feature_cols, importances.tolist()))

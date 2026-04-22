@@ -17,8 +17,9 @@ load_dotenv()
 genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 
 # Try the powerful model first; fall back to the faster/cheaper one
-MODEL_PRIMARY  = "gemini-1.5-pro"
-MODEL_FALLBACK = "gemini-1.5-flash"
+MODEL_PRIMARY  = "gemini-1.5-flash"
+MODEL_SECONDARY = "gemini-1.5-pro"
+MODEL_TERTIARY = "gemini-pro" # legacy fallback
 
 MAX_RETRIES = 2   # attempts per model before switching
 RETRY_DELAY = 1   # seconds to wait between retries
@@ -48,7 +49,7 @@ def call_gemini(
     Raises:
         RuntimeError if all models and retries are exhausted.
     """
-    models_to_try = [MODEL_PRIMARY, MODEL_FALLBACK]
+    models_to_try = [MODEL_PRIMARY, MODEL_SECONDARY, MODEL_TERTIARY]
 
     for model_name in models_to_try:
         for attempt in range(1, MAX_RETRIES + 1):
@@ -62,10 +63,10 @@ def call_gemini(
                 response = model.generate_content(prompt)
                 raw_text = response.text.strip()
 
-                # ── Log raw response so we can see exactly what Gemini returned ──
-                print(f"[{agent_name}] ✓ Got response from {model_name}:")
+                # -- Log raw response so we can see exactly what Gemini returned --
+                print(f"[{agent_name}] OK Got response from {model_name}:")
                 print("-" * 60)
-                print(raw_text[:800])   # print first 800 chars — enough to spot issues
+                print(raw_text[:800])   # print first 800 chars -- enough to spot issues
                 if len(raw_text) > 800:
                     print(f"... [{len(raw_text) - 800} more characters]")
                 print("-" * 60)
@@ -73,17 +74,17 @@ def call_gemini(
                 return raw_text
 
             except Exception as e:
-                print(f"[{agent_name}] ✗ {model_name} attempt {attempt} failed: {e}")
+                print(f"[{agent_name}] ERR {model_name} attempt {attempt} failed: {e}")
                 if attempt < MAX_RETRIES:
                     print(f"[{agent_name}] Retrying in {RETRY_DELAY}s...")
                     time.sleep(RETRY_DELAY)
 
         # If we just finished all retries for the primary model, announce the switch
         if model_name == MODEL_PRIMARY:
-            print(f"[{agent_name}] All {MODEL_PRIMARY} attempts failed — switching to {MODEL_FALLBACK}...")
+            print(f"[{agent_name}] All {MODEL_PRIMARY} attempts failed -- switching to {MODEL_FALLBACK}...")
 
     # If we get here, every model and every retry failed
     raise RuntimeError(
-        f"[{agent_name}] Gemini completely unavailable — "
+        f"[{agent_name}] Gemini completely unavailable -- "
         f"tried {MODEL_PRIMARY} and {MODEL_FALLBACK}, {MAX_RETRIES} attempts each."
     )

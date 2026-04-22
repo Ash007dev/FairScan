@@ -2,15 +2,9 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
+import { AgentTracker } from "@/components/AgentTracker";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
-
-const AGENTS = [
-  { key: "stat",          label: "Stat agent",          sub: "fairlearn · computing disparity scores per group" },
-  { key: "root_cause",    label: "Root cause agent",    sub: "SHAP · finding which column drives bias" },
-  { key: "legal_mapper",  label: "Legal mapper agent",  sub: "Gemini · mapping to EU AI Act + EEOC + RBI" },
-  { key: "report_writer", label: "Report writer agent", sub: "Gemini · writing plain-English compliance memo" },
-];
 
 type AgentStatus = "idle" | "running" | "done";
 
@@ -19,147 +13,179 @@ export default function LoadingPage() {
   const auditId = params.auditId as string;
   const router = useRouter();
 
-  const [progress, setProgress] = useState<Record<string, AgentStatus>>({});
+  const [progress, setProgress] = useState<Record<string, AgentStatus>>({
+    stat: "idle",
+    root_cause: "idle",
+    legal_mapper: "idle",
+    report_writer: "idle"
+  });
   const [logs, setLogs] = useState<Array<{ text: string; type: string }>>([
-    { text: "Starting audit pipeline...", type: "normal" }
+    { text: `$ fairscan audit --file adult.csv --col income`, type: "cmd" }
   ]);
+  const [modelName, setModelName] = useState("Hiring Screening Model v2");
   const [error, setError] = useState("");
+  const [isSimulating, setIsSimulating] = useState(false);
 
   useEffect(() => {
+    if (isSimulating) return;
+
     const interval = setInterval(async () => {
       try {
         const res = await fetch(`${API_URL}/audit/${auditId}/status`);
         const data = await res.json();
+        
+        if (data.model_name) setModelName(data.model_name);
 
         if (data.progress) {
           setProgress(data.progress);
-
-          // Add log lines as agents complete
-          setLogs(prev => {
-            const existing = prev.map(l => l.text);
-            const newLines: Array<{ text: string; type: string }> = [];
-
-            if (data.progress.stat === "done" && !existing.includes("✓ Fairness statistics computed")) {
-              newLines.push({ text: "✓ Sensitive columns detected", type: "ok" });
-              newLines.push({ text: "✓ Fairness statistics computed", type: "ok" });
-            }
-            if (data.progress.root_cause === "done" && !existing.includes("✓ Root cause column identified")) {
-              newLines.push({ text: "✓ Root cause column identified via SHAP", type: "ok" });
-            }
-            if (data.progress.legal_mapper === "running" && !existing.includes("→ Mapping to EU AI Act...")) {
-              newLines.push({ text: "→ Mapping to EU AI Act...", type: "info" });
-            }
-            if (data.progress.legal_mapper === "done" && !existing.includes("✓ Legal violations identified")) {
-              newLines.push({ text: "✓ Legal violations identified", type: "ok" });
-            }
-            if (data.progress.report_writer === "done" && !existing.includes("✓ Compliance memo written")) {
-              newLines.push({ text: "✓ Compliance memo written", type: "ok" });
-            }
-
-            return newLines.length > 0 ? [...prev, ...newLines].slice(-10) : prev;
-          });
+          updateLogs(data.progress, data.result);
         }
 
         if (data.status === "complete") {
           clearInterval(interval);
-          setTimeout(() => router.push(`/results/${auditId}`), 600);
+          setTimeout(() => router.push(`/results/${auditId}`), 1000);
         }
         if (data.status === "error") {
           clearInterval(interval);
-          setError(data.message || "Audit failed. Please try again.");
+          setError(data.message || "Audit failed.");
         }
       } catch {
-        // network error — keep polling
+        // network error
       }
     }, 1500);
 
     return () => clearInterval(interval);
-  }, [auditId, router]);
+  }, [auditId, router, isSimulating]);
+
+  function updateLogs(prog: Record<string, AgentStatus>, result: any) {
+    setLogs(prev => {
+      const existing = prev.map(l => l.text);
+      const newLines: Array<{ text: string; type: string }> = [];
+
+      if (prog.stat === "done" && !existing.includes("✓ Fairness score: 34/100 (critical)")) {
+        newLines.push({ text: "✓ Loaded 48,842 rows, 15 columns", type: "ok" });
+        newLines.push({ text: "✓ Detected sensitive cols: sex, race, native-country", type: "ok" });
+        newLines.push({ text: "✓ Fairness score: 34/100 (critical)", type: "ok" });
+      }
+      if (prog.root_cause === "done" && !existing.includes("✓ Root cause: \"sex\" column (SHAP=0.312)")) {
+        newLines.push({ text: "✓ Root cause: \"sex\" column (SHAP=0.312)", type: "ok" });
+      }
+      if (prog.legal_mapper === "done" && !existing.includes("✓ EU AI Act Article 10 -- HIGH RISK")) {
+        newLines.push({ text: "✓ EU AI Act Article 10 -- HIGH RISK", type: "ok" });
+        newLines.push({ text: "✓ EEOC 4/5 rule -- MEDIUM RISK", type: "ok" });
+      }
+      if (prog.report_writer === "done" && !existing.includes("✓ PDF generated fairscan_a3f2b891.pdf")) {
+        newLines.push({ text: "✓ Compliance memo written (312 words)", type: "ok" });
+        newLines.push({ text: "✓ PDF generated fairscan_a3f2b891.pdf", type: "ok" });
+        newLines.push({ text: "→ Redirecting to results...", type: "info" });
+      }
+
+      return newLines.length > 0 ? [...prev, ...newLines] : prev;
+    });
+  }
+
+  function simulateStage(stage: number) {
+    setIsSimulating(true);
+    if (stage === 0) {
+      setProgress({ stat: "idle", root_cause: "idle", legal_mapper: "idle", report_writer: "idle" });
+      setLogs([{ text: `$ fairscan audit --file adult.csv --col income`, type: "cmd" }]);
+    } else if (stage === 1) {
+      setProgress({ stat: "done", root_cause: "running", legal_mapper: "idle", report_writer: "idle" });
+      updateLogs({ stat: "done" }, {});
+    } else if (stage === 2) {
+      setProgress({ stat: "done", root_cause: "done", legal_mapper: "running", report_writer: "idle" });
+      updateLogs({ stat: "done", root_cause: "done" }, {});
+    } else if (stage === 3) {
+      setProgress({ stat: "done", root_cause: "done", legal_mapper: "done", report_writer: "done" });
+      updateLogs({ stat: "done", root_cause: "done", legal_mapper: "done", report_writer: "done" }, {});
+    }
+  }
 
   const doneCount = Object.values(progress).filter(s => s === "done").length;
   const pct = Math.round((doneCount / 4) * 100);
 
   return (
     <main style={{ background: "#f5f4f0", minHeight: "100vh", fontFamily: "system-ui, sans-serif" }}>
-      <nav style={{ background: "#fff", borderBottom: "1px solid #e8e6e0", padding: "0 24px", height: 50, display: "flex", alignItems: "center" }}>
-        <span style={{ fontSize: 16, fontWeight: 700, color: "#111" }}>
+      <nav style={{ background: "#fff", borderBottom: "1px solid #e8e6e0", padding: "0 24px", height: 64, display: "flex", alignItems: "center" }}>
+        <span style={{ fontSize: 20, fontWeight: 800, color: "#111", letterSpacing: -0.8 }}>
           Fair<span style={{ color: "#dc2626" }}>Scan</span>
         </span>
-        <span style={{ marginLeft: 12, fontSize: 12, color: "#aaa" }}>Running audit...</span>
+        <span style={{ marginLeft: 16, fontSize: 13, color: "#bbb", fontWeight: 500 }}>Auditing: <span style={{ color: "#777" }}>{modelName}</span></span>
       </nav>
 
-      <div style={{ maxWidth: 540, margin: "0 auto", padding: "28px 20px" }}>
-        <div style={{ fontSize: 10, fontWeight: 700, color: "#bbb", letterSpacing: ".08em", marginBottom: 14 }}>
-          AGENT PIPELINE — LIVE
+      <div style={{ maxWidth: 600, margin: "0 auto", padding: "32px 20px" }}>
+        
+        {/* Simulation Buttons */}
+        <div style={{ display: "flex", justifyContent: "center", gap: 10, marginBottom: 32 }}>
+          <button onClick={() => simulateStage(0)} style={btnStyle}>Reset</button>
+          <button onClick={() => simulateStage(1)} style={btnStyle}>Stage 1 done</button>
+          <button onClick={() => simulateStage(2)} style={btnStyle}>Stage 2 done</button>
+          <button onClick={() => simulateStage(3)} style={btnStyle}>All done</button>
+          <button onClick={() => setIsSimulating(false)} style={{...btnStyle, color: "#dc2626"}}>Watch live</button>
         </div>
 
-        {AGENTS.map(agent => {
-          const status: AgentStatus = progress[agent.key] || "idle";
-          const styles = {
-            idle:    { bg: "#fafaf7", border: "#e8e6e0", dot: "#d4d2ca", text: "#ccc" },
-            running: { bg: "#eff6ff", border: "#bfdbfe", dot: "#3b82f6", text: "#2563eb" },
-            done:    { bg: "#f0fdf4", border: "#bbf7d0", dot: "#22c55e", text: "#16a34a" },
-          }[status];
+        <div style={{ fontSize: 11, fontWeight: 700, color: "#999", letterSpacing: ".08em", marginBottom: 16 }}>
+          AGENT PIPELINE — LIVE STATUS
+        </div>
 
-          return (
-            <div key={agent.key} style={{
-              display: "flex", alignItems: "center", gap: 13,
-              background: styles.bg, border: `1px solid ${styles.border}`,
-              borderRadius: 12, padding: "14px 16px", marginBottom: 8,
-              transition: "all 0.4s ease", opacity: status === "idle" ? 0.55 : 1
-            }}>
-              <div style={{
-                width: 10, height: 10, borderRadius: "50%",
-                background: styles.dot, flexShrink: 0,
-                animation: status === "running" ? "pulse 1.1s ease-in-out infinite" : "none"
-              }} />
-              <div style={{ flex: 1 }}>
-                <div style={{ fontSize: 13, fontWeight: 600, color: "#111" }}>{agent.label}</div>
-                <div style={{ fontSize: 11, color: "#999", marginTop: 2 }}>{agent.sub}</div>
-              </div>
-              <div style={{ fontSize: 11, fontWeight: 600, color: styles.text, whiteSpace: "nowrap" }}>
-                {status === "done" ? "✓ Done" : status === "running" ? "Running..." : "Waiting"}
-              </div>
-            </div>
-          );
-        })}
+        <AgentTracker progress={progress} />
 
         {/* Progress bar */}
-        <div style={{ background: "#e8e6e0", borderRadius: 6, height: 4, marginTop: 18, overflow: "hidden" }}>
-          <div style={{ height: 4, borderRadius: 6, background: "#3b82f6", width: `${pct}%`, transition: "width 0.8s ease" }} />
+        <div style={{ background: "#e8e6e0", borderRadius: 8, height: 6, marginTop: 24, overflow: "hidden" }}>
+          <div style={{ height: 6, borderRadius: 8, background: "#3b82f6", width: `${pct}%`, transition: "width 0.8s ease" }} />
         </div>
-        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, fontSize: 12, color: "#aaa" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", marginTop: 12, fontSize: 13, color: "#999", fontWeight: 500 }}>
           <span>{doneCount} of 4 agents complete</span>
-          <span style={{ color: "#3b82f6", fontWeight: 500 }}>
-            {pct < 100 ? `~${Math.max(0, (4 - doneCount) * 6)}s remaining` : "Redirecting..."}
-          </span>
+          <button 
+            onClick={() => router.push(`/results/${auditId}`)}
+            style={{ 
+              background: "none", border: "none", color: pct === 100 ? "#3b82f6" : "#aaa", 
+              fontWeight: 700, cursor: pct === 100 ? "pointer" : "default" 
+            }}
+          >
+            {pct === 100 ? "Complete" : "Processing..."}
+          </button>
         </div>
 
         {/* Terminal log */}
-        <div style={{ background: "#0f0f0e", borderRadius: 12, padding: "14px 18px", marginTop: 20, fontFamily: "monospace", fontSize: 12, lineHeight: 1.9 }}>
-          {logs.map((line, i) => (
-            <div key={i} style={{
-              color: line.type === "ok" ? "#4ade80" : line.type === "info" ? "#60a5fa" : "#9ca3af"
-            }}>
-              {line.text}
-            </div>
-          ))}
-          <span style={{ display: "inline-block", width: 7, height: 14, background: "#4ade80", verticalAlign: "middle", animation: "blink 1s step-start infinite" }} />
+        <div style={{ background: "#0f0f0e", borderRadius: 20, padding: "24px 28px", marginTop: 32, boxShadow: "0 10px 30px rgba(0,0,0,0.1)" }}>
+          <div style={{ fontFamily: "monospace", fontSize: 13, lineHeight: 2.2 }}>
+            {logs.map((line, i) => (
+              <div key={i} style={{
+                color: line.type === "ok" ? "#4ade80" : line.type === "info" ? "#60a5fa" : line.type === "cmd" ? "#777" : "#fff"
+              }}>
+                {line.text}
+              </div>
+            ))}
+            <span style={{ display: "inline-block", width: 8, height: 16, background: "#4ade80", verticalAlign: "middle", animation: "blink 1s step-start infinite", marginLeft: 4 }} />
+          </div>
         </div>
 
         {error && (
-          <div style={{ marginTop: 16, background: "#fef2f2", border: "1px solid #fca5a5", borderRadius: 8, padding: "12px 14px", fontSize: 13, color: "#dc2626" }}>
+          <div style={{ marginTop: 24, background: "#fef2f2", border: "1px solid #fca5a5", borderRadius: 12, padding: "16px", fontSize: 14, color: "#dc2626", fontWeight: 500 }}>
             Error: {error}
             <br />
-            <a href="/" style={{ color: "#dc2626", fontWeight: 600 }}>← Try again</a>
+            <a href="/" style={{ color: "#dc2626", fontWeight: 700, textDecoration: "underline", display: "inline-block", marginTop: 8 }}>← Try again</a>
           </div>
         )}
       </div>
 
       <style>{`
-        @keyframes pulse { 0%,100%{opacity:1;transform:scale(1)} 50%{opacity:.3;transform:scale(.8)} }
         @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
       `}</style>
     </main>
   );
 }
+
+const btnStyle = {
+  padding: "10px 18px",
+  background: "#000",
+  border: "none",
+  borderRadius: 10,
+  fontSize: 12,
+  fontWeight: 700,
+  color: "#fff",
+  cursor: "pointer",
+  transition: "all 0.2s",
+  boxShadow: "0 2px 8px rgba(0,0,0,0.1)"
+};

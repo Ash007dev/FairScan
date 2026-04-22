@@ -30,23 +30,23 @@ export function BiasHeatmap({ resultsPerGroup }: Props) {
         const gap = Math.round(maxRate - minRate);
 
         return (
-          <div key={col} style={{ marginBottom: 20 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: "#555", marginBottom: 8 }}>
-              {col}
+          <div key={col} style={{ marginBottom: 24 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
+              <div style={{ fontSize: 12, fontWeight: 800, color: "#111", textTransform: "uppercase", letterSpacing: "0.05em" }}>{col}</div>
               {gap > 10 && (
-                <span style={{ marginLeft: 8, fontSize: 10, fontWeight: 700, background: "#fef2f2", color: "#dc2626", border: "1px solid #fca5a5", borderRadius: 5, padding: "2px 7px" }}>
-                  {gap}pp gap
+                <span style={{ fontSize: 10, fontWeight: 800, background: "#fef2f2", color: "#dc2626", border: "1px solid #fca5a5", borderRadius: 6, padding: "3px 8px" }}>
+                  {gap}pp gap detected
                 </span>
               )}
             </div>
 
-            <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: 3 }}>
+            <table style={{ width: "100%", borderCollapse: "separate", borderSpacing: "0 6px" }}>
               <thead>
                 <tr>
-                  <th style={{ fontSize: 10, fontWeight: 700, color: "#aaa", padding: "4px 8px", textAlign: "left" }}>Group</th>
-                  <th style={{ fontSize: 10, fontWeight: 700, color: "#aaa", padding: "4px 8px", textAlign: "center" }}>Approved %</th>
-                  <th style={{ fontSize: 10, fontWeight: 700, color: "#aaa", padding: "4px 8px", textAlign: "center" }}>Rejected %</th>
-                  <th style={{ fontSize: 10, fontWeight: 700, color: "#aaa", padding: "4px 8px", textAlign: "center" }}>vs best</th>
+                  <th style={{ fontSize: 11, fontWeight: 700, color: "#666", padding: "0 12px", textAlign: "left", textTransform: "uppercase" }}>Group</th>
+                  <th style={{ fontSize: 11, fontWeight: 700, color: "#666", padding: "0 12px", textAlign: "center", width: 100, textTransform: "uppercase" }}>Approved</th>
+                  <th style={{ fontSize: 11, fontWeight: 700, color: "#666", padding: "0 12px", textAlign: "center", width: 100, textTransform: "uppercase" }}>Rejected</th>
+                  <th style={{ fontSize: 11, fontWeight: 700, color: "#666", padding: "0 12px", textAlign: "center", width: 100, textTransform: "uppercase" }}>Bias</th>
                 </tr>
               </thead>
               <tbody>
@@ -57,23 +57,23 @@ export function BiasHeatmap({ resultsPerGroup }: Props) {
 
                   return (
                     <tr key={group}>
-                      <td style={{ fontSize: 12, fontWeight: 500, color: "#444", padding: "6px 8px" }}>{group}</td>
-                      <td style={{ padding: 3 }}>
-                        <div style={{ background: bg, color: text, borderRadius: 7, padding: "8px 6px", textAlign: "center", fontSize: 13, fontWeight: 700 }}>
+                      <td style={{ fontSize: 14, fontWeight: 600, color: "#111", padding: "10px 12px" }}>{group}</td>
+                      <td style={{ padding: "0 4px" }}>
+                        <div style={{ background: bg, color: text, borderRadius: 10, padding: "12px 0", textAlign: "center", fontSize: 14, fontWeight: 800 }}>
                           {rate.toFixed(1)}%
                         </div>
                       </td>
-                      <td style={{ padding: 3 }}>
-                        <div style={{ background: "#f5f4f0", color: "#888", borderRadius: 7, padding: "8px 6px", textAlign: "center", fontSize: 13, fontWeight: 600 }}>
+                      <td style={{ padding: "0 4px" }}>
+                        <div style={{ background: "#f8f7f4", color: "#166534", borderRadius: 10, padding: "12px 0", textAlign: "center", fontSize: 14, fontWeight: 700 }}>
                           {rejected}%
                         </div>
                       </td>
-                      <td style={{ padding: 3 }}>
+                      <td style={{ padding: "0 4px" }}>
                         <div style={{
-                          background: diff === 0 ? "#f5f4f0" : "#fef2f2",
-                          color: diff === 0 ? "#aaa" : "#dc2626",
-                          borderRadius: 7, padding: "8px 6px",
-                          textAlign: "center", fontSize: 13, fontWeight: 700
+                          background: diff === 0 ? "#f8f7f4" : "#fef2f2",
+                          color: diff === 0 ? "#bbb" : "#dc2626",
+                          borderRadius: 10, padding: "12px 0",
+                          textAlign: "center", fontSize: 14, fontWeight: 800
                         }}>
                           {diff === 0 ? "baseline" : `${diff}pp`}
                         </div>
@@ -85,8 +85,8 @@ export function BiasHeatmap({ resultsPerGroup }: Props) {
             </table>
 
             {gap > 10 && (
-              <div style={{ marginTop: 8, fontSize: 12, color: "#dc2626", fontWeight: 500, padding: "8px 12px", background: "#fef2f2", borderRadius: 8, border: "1px solid #fca5a5" }}>
-                {colData.most_approved_group} approved at {Math.round(maxRate / (minRate || 1) * 10) / 10}× the rate of {colData.least_approved_group}
+              <div style={{ marginTop: 12, fontSize: 14, color: "#991b1b", fontWeight: 500, padding: "16px 20px", background: "#fef2f2", borderRadius: 12, border: "1px solid #fca5a5", lineHeight: 1.5 }}>
+                {colData.least_approved_group}s are approved at {Math.round(maxRate / (minRate || 1) * 10) / 10}× the rate of {colData.most_approved_group}s — a {gap} percentage point gap. This single number triggers both EU AI Act Article 10 and the EEOC 4/5ths rule.
               </div>
             )}
           </div>
@@ -94,4 +94,4 @@ export function BiasHeatmap({ resultsPerGroup }: Props) {
       })}
     </div>
   );
-}
+}

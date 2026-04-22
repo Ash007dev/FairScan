@@ -96,7 +96,7 @@ async def stream_status(audit_id: str):
     return StreamingResponse(event_gen(), media_type="text/event-stream")
 
 
-# ── Pydantic model for counterfactual request validation ──
+# -- Pydantic model for counterfactual request validation --
 class CounterfactualRequest(BaseModel):
     row: dict
     flip_column: str

@@ -21,11 +21,11 @@ async def run_audit(df, decision_column, model_name, audit_id, store):
         colors = {"running": YELLOW, "done": GREEN, "error": RED}
         color = colors.get(status, RESET)
         status_text = status.upper()
-        print(f"{BLUE}[{audit_id[:8]}]{RESET} ⚙️  {agent.replace('_', ' ').title():<18} | {color}{status_text}{RESET}")
+        print(f"{BLUE}[{audit_id[:8]}]{RESET} *  {agent.replace('_', ' ').title():<18} | {color}{status_text}{RESET}")
 
-    print(f"\n{GREEN}🚀 STARTING SCAN:{RESET} {model_name} (Audit ID: {audit_id})")
+    print(f"\n{GREEN}>>> STARTING SCAN:{RESET} {model_name} (Audit ID: {audit_id})")
 
-    # ── Stage 1: run stat and root_cause in parallel ──
+    # -- Stage 1: run stat and root_cause in parallel --
     update("stat", "running")
     update("root_cause", "running")
 
@@ -53,7 +53,7 @@ async def run_audit(df, decision_column, model_name, audit_id, store):
         raise RuntimeError(f"Root cause agent failed: {root_cause_result}")
     update("root_cause", "done")
 
-    # ── Stage 2: run legal_mapper and report_writer in parallel ──
+    # -- Stage 2: run legal_mapper and report_writer in parallel --
     update("legal_mapper", "running")
     update("report_writer", "running")
 
@@ -69,7 +69,7 @@ async def run_audit(df, decision_column, model_name, audit_id, store):
     # Legal mapper failure is non-fatal — use a fallback
     if isinstance(legal_result, Exception):
         update("legal_mapper", "error")
-        print(f"{RED}⚠️ Legal mapper failed (using fallback): {legal_result}{RESET}")
+        print(f"{RED}WARNING: Legal mapper failed (using fallback): {legal_result}{RESET}")
         legal_result = {
             "violations": [],
             "summary": "Legal analysis unavailable due to an error."
@@ -80,7 +80,7 @@ async def run_audit(df, decision_column, model_name, audit_id, store):
     # Report writer failure is non-fatal — use a fallback
     if isinstance(report_result, Exception):
         update("report_writer", "error")
-        print(f"{RED}⚠️ Report writer failed (using fallback): {report_result}{RESET}")
+        print(f"{RED}WARNING: Report writer failed (using fallback): {report_result}{RESET}")
         report_result = {
             "memo": "Report generation failed. Please review the statistical findings above.",
             "model_name": model_name,
@@ -94,7 +94,7 @@ async def run_audit(df, decision_column, model_name, audit_id, store):
             "fairness_score": stat_result["fairness_score"],
         }
 
-    print(f"{GREEN}✅ SCAN COMPLETE:{RESET} {model_name} finished successfully.\n")
+    print(f"{GREEN}SUCCESS: SCAN COMPLETE:{RESET} {model_name} finished successfully.\n")
 
     # Remove internal model objects before storing (not JSON serializable)
     clean_stat = {k: v for k, v in stat_result.items() if not k.startswith("_")}

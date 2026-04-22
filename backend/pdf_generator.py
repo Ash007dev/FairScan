@@ -10,7 +10,7 @@ import tempfile
 from datetime import datetime
 
 
-# ── Color palette ─────────────────────────────────────────────────────────────
+# -- Color palette -------------------------------------------------------------
 COLOR_BLACK      = colors.HexColor("#1a1a18")
 COLOR_RED        = colors.HexColor("#dc2626")
 COLOR_ORANGE     = colors.HexColor("#d97706")
@@ -32,14 +32,14 @@ def _score_color(score: int):
 
 def _score_label(score: int) -> str:
     if score < 50:
-        return "HIGH RISK"
+        return "CRITICAL -- IMMEDIATE ACTION REQUIRED"
     elif score < 75:
-        return "MEDIUM RISK"
+        return "WARNING -- REMEDIATION RECOMMENDED"
     else:
-        return "LOW RISK"
+        return "HEALTHY -- NO ACTION REQUIRED"
 
 
-# ── TXT fallback ──────────────────────────────────────────────────────────────
+# -- TXT fallback --------------------------------------------------------------
 # If ReportLab crashes, we write a plain .txt file instead.
 # main.py can still serve this as a download — just change the media type.
 def _generate_txt_fallback(audit_id: str, result: dict) -> str:
@@ -52,7 +52,7 @@ def _generate_txt_fallback(audit_id: str, result: dict) -> str:
 
     lines = [
         "=" * 60,
-        "FAIRSCAN — AI BIAS AUDIT REPORT",
+        "FAIRSCAN -- AI BIAS AUDIT REPORT",
         f"Model: {result.get('model_name', 'Unknown')}",
         f"Audit ID: {audit_id[:8]}",
         f"Date: {date_str}",
@@ -87,7 +87,7 @@ def _generate_txt_fallback(audit_id: str, result: dict) -> str:
     return path
 
 
-# ── Add footer to every page ──────────────────────────────────────────────────
+# -- Add footer to every page --------------------------------------------------
 def _make_page_footer(canvas, doc):
     """Called by ReportLab on every page — draws the footer."""
     canvas.saveState()
@@ -103,7 +103,7 @@ def _make_page_footer(canvas, doc):
     canvas.restoreState()
 
 
-# ── Main function ─────────────────────────────────────────────────────────────
+# -- Main function -------------------------------------------------------------
 def generate_pdf(audit_id: str, result: dict) -> str:
     """
     Builds a professional compliance PDF report.
@@ -119,7 +119,7 @@ def generate_pdf(audit_id: str, result: dict) -> str:
 
     except Exception as e:
         # If PDF building crashes for any reason, fall back to a .txt file
-        print(f"[PDF] ReportLab error: {e} — falling back to .txt")
+        print(f"[PDF] ReportLab error: {e} -- falling back to .txt")
         return _generate_txt_fallback(audit_id, result)
 
 
@@ -185,48 +185,76 @@ def _build_pdf(path: str, audit_id: str, result: dict):
 
     story = []
 
-    # ── 1. HEADER ──────────────────────────────────────────────────────────────
-    story.append(Paragraph("FairScan", title_style))
-    story.append(Paragraph("AI Bias Audit Report", subtitle_style))
-    story.append(Paragraph(f"<b>Model:</b> {model_name}", subtitle_style))
-    story.append(Paragraph(f"<b>Date:</b> {date_str}", subtitle_style))
-    story.append(Paragraph(f"<b>Audit ID:</b> {audit_id[:8]}", subtitle_style))
-    story.append(HRFlowable(width="100%", thickness=1, color=COLOR_BORDER, spaceAfter=10))
+    # -- 1. HEADER --------------------------------------------------------------
+    header_table = Table(
+        [[
+            [
+                Paragraph("FairScan", title_style),
+                Paragraph("AI BIAS AUDIT REPORT", subtitle_style),
+            ],
+            [
+                Paragraph(f"<b>{model_name}</b>", ParagraphStyle("HdrR", parent=subtitle_style, alignment=2, textColor=COLOR_BLACK, fontSize=11)),
+                Paragraph(f"Generated: {date_str}", ParagraphStyle("HdrR2", parent=subtitle_style, alignment=2)),
+                Paragraph(f"Dataset: {result.get('stat', {}).get('row_count', 'Unknown')} rows . {len(result.get('sensitive_columns', [])) + 1} cols", 
+                          ParagraphStyle("HdrR3", parent=subtitle_style, alignment=2)),
+                Paragraph(f"Audit ID: {audit_id[:8]}", ParagraphStyle("HdrR4", parent=subtitle_style, alignment=2)),
+            ]
+        ]],
+        colWidths=[8 * cm, 8.5 * cm]
+    )
+    story.append(header_table)
+    story.append(HRFlowable(width="100%", thickness=1, color=COLOR_BORDER, spaceBefore=4, spaceAfter=20))
 
-    # ── 2. FAIRNESS SCORE BANNER ───────────────────────────────────────────────
-    # A colored table cell acts as the "banner box"
+    # -- 2. FAIRNESS SCORE BANNER -----------------------------------------------
     banner_color = _score_color(score)
     banner_label = _score_label(score)
+    
+    # Get a short summary for the banner subtext
+    violations = result.get("legal", {}).get("violations", [])
+    v_count = len(violations)
+    
+    # Try to find the biggest gap to mention it in the subtext
+    subtext_gap = ""
+    group_data = result.get("stat", {}).get("results_per_group", {})
+    if group_data:
+        # Just pick the first one for the summary
+        first_attr = list(group_data.values())[0]
+        if "most_approved_group" in first_attr:
+            ratio = round(first_attr["groups"].get(first_attr["most_approved_group"], 1) / 
+                         (first_attr["groups"].get(first_attr["least_approved_group"], 1) or 1) * 100)
+            subtext_gap = f"{first_attr['least_approved_group']}s approved at {ratio}% the rate of {first_attr['most_approved_group']}s. "
+
+    banner_subtext = f"{subtext_gap}{v_count} regulatory violations found. Model must not be deployed without remediation." if score < 50 else "The model shows acceptable levels of fairness across analyzed demographic groups."
 
     score_table = Table(
         [[
             Paragraph(
-                f'<font color="white"><b>{score}/100</b></font>',
-                ParagraphStyle("ScoreNum", fontSize=32, fontName="Helvetica-Bold",
-                               alignment=1, leading=38)
+                f'<font color="{banner_color.hexval()}"><b>{score}</b></font><font color="#cccccc" size="14">/100</font>',
+                ParagraphStyle("ScoreNum", fontSize=48, fontName="Helvetica-Bold", alignment=1, leading=52)
             ),
-            Paragraph(
-                f'<font color="white"><b>{banner_label}</b></font><br/>'
-                f'<font color="white">Fairness Score — lower means more biased</font>',
-                ParagraphStyle("ScoreLabel", fontSize=12, fontName="Helvetica-Bold",
-                               leading=18, textColor=colors.white)
-            )
+            [
+                Paragraph(f'<b>{banner_label}</b>', 
+                          ParagraphStyle("ScoreLabel", fontSize=14, fontName="Helvetica-Bold", leading=20, textColor=banner_color)),
+                Paragraph(banner_subtext, 
+                          ParagraphStyle("ScoreDesc", fontSize=10, leading=14, textColor=colors.HexColor("#666666"), spaceBefore=4))
+            ]
         ]],
-        colWidths=[4 * cm, 12 * cm]
+        colWidths=[5.5 * cm, 11 * cm]
     )
     score_table.setStyle(TableStyle([
-        ("BACKGROUND",    (0, 0), (-1, -1), banner_color),
+        ("BACKGROUND",    (0, 0), (-1, -1), colors.white),
+        ("BOX",           (0, 0), (-1, -1), 1, COLOR_BORDER),
         ("VALIGN",        (0, 0), (-1, -1), "MIDDLE"),
-        ("TOPPADDING",    (0, 0), (-1, -1), 14),
-        ("BOTTOMPADDING", (0, 0), (-1, -1), 14),
-        ("LEFTPADDING",   (0, 0), (-1, -1), 16),
-        ("RIGHTPADDING",  (0, 0), (-1, -1), 16),
-        ("ROUNDEDCORNERS", [6]),
+        ("TOPPADDING",    (0, 0), (-1, -1), 20),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 20),
+        ("LEFTPADDING",   (0, 0), (-1, -1), 20),
+        ("RIGHTPADDING",  (0, 0), (-1, -1), 20),
+        ("ROUNDEDCORNERS", [8]),
     ]))
     story.append(score_table)
-    story.append(Spacer(1, 0.5 * cm))
+    story.append(Spacer(1, 1 * cm))
 
-    # ── 3. EXECUTIVE SUMMARY ───────────────────────────────────────────────────
+    # -- 3. EXECUTIVE SUMMARY ---------------------------------------------------
     story.append(Paragraph("Executive Summary", section_style))
 
     # The memo has labelled sections separated by newlines — parse them out
@@ -258,7 +286,7 @@ def _build_pdf(path: str, audit_id: str, result: dict):
         story.append(Paragraph(line, body_style))
         story.append(Spacer(1, 0.15 * cm))
 
-    # ── 4. KEY FINDINGS (bullet points) ───────────────────────────────────────
+    # -- 4. KEY FINDINGS (bullet points) ---------------------------------------
     story.append(Paragraph("Key Findings", section_style))
 
     in_findings = False
@@ -278,14 +306,14 @@ def _build_pdf(path: str, audit_id: str, result: dict):
         for bullet in findings_lines:
             # Remove leading dash/bullet if Gemini added one
             clean = bullet.lstrip("-•* ").strip()
-            story.append(Paragraph(f"• {clean}", bullet_style))
+            story.append(Paragraph(f"* {clean}", bullet_style))
     else:
         # Fallback: pull from stat results
-        story.append(Paragraph(f"• Fairness score: {score}/100", bullet_style))
+        story.append(Paragraph(f"* Fairness score: {score}/100", bullet_style))
 
     story.append(Spacer(1, 0.3 * cm))
 
-    # ── 5. LEGAL VIOLATIONS TABLE ──────────────────────────────────────────────
+    # -- 5. LEGAL VIOLATIONS TABLE ----------------------------------------------
     if violations:
         story.append(Paragraph("Regulatory Findings", section_style))
 
@@ -331,7 +359,7 @@ def _build_pdf(path: str, audit_id: str, result: dict):
         ]))
         story.append(t)
 
-    # ── 6. REQUIRED ACTIONS (numbered list) ───────────────────────────────────
+    # -- 6. REQUIRED ACTIONS (numbered list) -----------------------------------
     story.append(Paragraph("Required Actions", section_style))
 
     in_actions = False
@@ -355,7 +383,7 @@ def _build_pdf(path: str, audit_id: str, result: dict):
         for i, v in enumerate(violations, start=1):
             story.append(Paragraph(f"{i}. {v.get('required_action', '')}", bullet_style))
 
-    # ── 7. RISK IF IGNORED ────────────────────────────────────────────────────
+    # -- 7. RISK IF IGNORED ----------------------------------------------------
     in_risk = False
     risk_lines = []
     for line in memo_lines:
@@ -372,7 +400,7 @@ def _build_pdf(path: str, audit_id: str, result: dict):
     if risk_lines:
         story.append(Spacer(1, 0.3 * cm))
         risk_box = Table(
-            [[Paragraph(f"⚠ Risk if ignored: {' '.join(risk_lines)}", body_style)]],
+            [[Paragraph(f"! Risk if ignored: {' '.join(risk_lines)}", body_style)]],
             colWidths=[17 * cm]
         )
         risk_box.setStyle(TableStyle([
@@ -384,5 +412,5 @@ def _build_pdf(path: str, audit_id: str, result: dict):
         ]))
         story.append(risk_box)
 
-    # ── Build the doc (footer is added via onPage callback) ───────────────────
+    # -- Build the doc (footer is added via onPage callback) -------------------
     doc.build(story, onFirstPage=_make_page_footer, onLaterPages=_make_page_footer)

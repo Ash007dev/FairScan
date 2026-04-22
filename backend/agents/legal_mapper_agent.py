@@ -7,7 +7,7 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from gemini_client import call_gemini
 
-# ── Prompt template ──────────────────────────────────────────────────────────
+# -- Prompt template -----------------------------------------------------------
 # {findings} gets replaced with the actual numbers before sending to Gemini
 LEGAL_PROMPT = """You are a compliance expert who specialises in these laws:
 - EU AI Act (Articles 9, 10, 13)
@@ -30,7 +30,7 @@ Return EXACTLY 2 to 4 findings. Most critical violations only.
 Use EXACTLY these field names: regulation, risk_level, finding, required_action, deadline."""
 
 
-# ── Smart fallback based on fairness score ───────────────────────────────────
+# -- Smart fallback based on fairness score -----------------------------------
 # Used when Gemini fails or returns unparseable output
 def _score_based_fallback(fairness_score: int) -> list:
     violations = []
@@ -71,7 +71,7 @@ def _score_based_fallback(fairness_score: int) -> list:
 # Retry + model-switch logic now lives in gemini_client.py (shared across all agents)
 
 
-# ── JSON parsing with fence stripping ────────────────────────────────────────
+# -- JSON parsing with fence stripping ----------------------------------------
 def _parse_gemini_json(text: str) -> list:
     """
     Strips ```json ... ``` fences that Gemini sometimes adds, then parses JSON.
@@ -88,7 +88,7 @@ def _parse_gemini_json(text: str) -> list:
     return json.loads(text.strip())
 
 
-# ── Main agent function ───────────────────────────────────────────────────────
+# -- Main agent function -------------------------------------------------------
 async def run_legal_mapper_agent(stat_result: dict, root_cause_result: dict) -> dict:
     # yield control briefly so FastAPI's async loop stays responsive
     await asyncio.sleep(0)
@@ -113,11 +113,11 @@ async def run_legal_mapper_agent(stat_result: dict, root_cause_result: dict) -> 
         print(f"[LegalMapper] Successfully parsed {len(violations)} violations from Gemini.")
 
     except json.JSONDecodeError as e:
-        print(f"[LegalMapper] JSON parse failed: {e} — switching to score-based fallback.")
+        print(f"[LegalMapper] JSON parse failed: {e} -- switching to score-based fallback.")
         violations = _score_based_fallback(fairness_score)
 
     except Exception as e:
-        print(f"[LegalMapper] Gemini completely failed: {e} — switching to score-based fallback.")
+        print(f"[LegalMapper] Gemini completely failed: {e} -- switching to score-based fallback.")
         violations = _score_based_fallback(fairness_score)
 
     # Count by risk level for the summary string
