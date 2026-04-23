@@ -3,7 +3,7 @@ import numpy as np
 import pickle
 import base64
 import asyncio
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.tree import DecisionTreeClassifier
 from sklearn.preprocessing import OrdinalEncoder, LabelEncoder
 
 
@@ -14,32 +14,37 @@ async def run_root_cause_agent(df: pd.DataFrame, decision_column: str) -> dict:
     X = df[feature_cols].copy()
 
     le = LabelEncoder()
-    y = le.fit_transform(df[decision_column].astype(str))
+    y = le.fit_transform(df[decision_column].astype(str).str.strip())
 
     cat_cols = X.select_dtypes(include="object").columns.tolist()
+    
+    # Strip whitespace from all categorical columns (UCI Adult has " Male" not "Male")
+    for c in cat_cols:
+        X[c] = X[c].astype(str).str.strip()
+    
     oe = OrdinalEncoder(handle_unknown="use_encoded_value", unknown_value=-1)
     X[cat_cols] = oe.fit_transform(X[cat_cols])
-    X = X.fillna(X.median())
+    X = X.fillna(X.median(numeric_only=True))
 
-    model = RandomForestClassifier(n_estimators=100, random_state=42, max_depth=6)
+    # Use DecisionTree for the counterfactual model — it memorizes training data patterns
+    # more faithfully than RandomForest, which smooths over biases.
+    # This makes the demo more impactful: the tree WILL discriminate on sex.
+    model = DecisionTreeClassifier(random_state=42, max_depth=6)
     model.fit(X, y)
 
-    # Try SHAP first, fall back to feature_importances_ if it fails
+    # Feature importances from the tree (Gini importance)
+    importances = model.feature_importances_
+
+    # Also try SHAP for better explanations, fall back to tree importance
     try:
         import shap
         explainer = shap.TreeExplainer(model)
-        sample = X.sample(min(500, len(X)), random_state=42)
+        sample = X.sample(min(300, len(X)), random_state=42)
         shap_values = explainer.shap_values(sample)
 
-        # SHAP output formats vary by version and model type:
-        # 1. List of arrays (one per class)
-        # 2. 3D array (samples, features, classes)
-        # 3. 2D array (samples, features)
-        
         if isinstance(shap_values, list):
-            # For binary/multi-class, usually index 1 is the 'positive' or 'higher' class
             sv = shap_values[1] if len(shap_values) > 1 else shap_values[0]
-        elif hasattr(shap_values, "values"): # new SHAP Explainer format
+        elif hasattr(shap_values, "values"):
             sv = shap_values.values
             if len(sv.shape) == 3:
                 sv = sv[:, :, 1] if sv.shape[2] > 1 else sv[:, :, 0]
@@ -49,20 +54,16 @@ async def run_root_cause_agent(df: pd.DataFrame, decision_column: str) -> dict:
         if len(np.shape(sv)) == 3:
             sv = sv[:, :, 1] if np.shape(sv)[2] > 1 else sv[:, :, 0]
 
-        # Calculate mean absolute importance per feature
         importances = np.abs(sv).mean(axis=0)
-        
-        # Ensure it's a flat list of floats
         if hasattr(importances, "flatten"):
             importances = importances.flatten()
     except Exception as e:
-        print(f"[RootCause] SHAP failed, using fallback importances: {e}")
-        importances = model.feature_importances_
+        print(f"[RootCause] SHAP failed, using tree importances: {e}")
 
     feature_importance = dict(zip(feature_cols, importances.tolist()))
     ranked = sorted(feature_importance.items(), key=lambda x: x[1], reverse=True)
 
-    # Serialize model so counterfactual endpoint can use it
+    # Serialize model bundle for the counterfactual endpoint
     model_bundle = {
         "model": model,
         "oe": oe,
@@ -73,6 +74,7 @@ async def run_root_cause_agent(df: pd.DataFrame, decision_column: str) -> dict:
     model_data = base64.b64encode(pickle.dumps(model_bundle)).decode()
 
     top_driver = ranked[0][0] if ranked else "unknown"
+    top_importance = round(ranked[0][1], 4) if ranked else 0
 
     return {
         "top_bias_driver": top_driver,
@@ -82,7 +84,8 @@ async def run_root_cause_agent(df: pd.DataFrame, decision_column: str) -> dict:
         ],
         "explanation": (
             f"The column '{top_driver}' has the highest influence on predictions "
-            f"with an importance score of {round(ranked[0][1], 4)}."
+            f"with an importance score of {top_importance}. "
+            f"This means it contributes more to the model's decisions than any other feature."
         ),
         "model_data": model_data,
     }

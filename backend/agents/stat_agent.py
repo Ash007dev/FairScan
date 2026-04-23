@@ -8,8 +8,12 @@ from fairlearn.metrics import demographic_parity_difference, equalized_odds_diff
 SENSITIVE_WORDS = [
     "gender", "sex", "race", "ethnicity", "age", "religion",
     "nationality", "marital", "disability", "zip", "zipcode",
-    "postcode", "caste", "color", "colour", "native"
+    "postcode", "caste", "color", "colour", "native", "origin"
 ]
+
+# Maximum unique values a column can have to be analysed as a categorical group.
+# Numeric columns like "age" have 60+ values — skip those from the heatmap.
+MAX_GROUPS_FOR_HEATMAP = 15
 
 
 def find_sensitive_columns(df: pd.DataFrame, decision_col: str) -> list:
@@ -32,7 +36,7 @@ def compute_fairness_score(rates: list) -> int:
     if not rates or max(rates) == 0:
         return 50
     ratio = min(rates) / max(rates)
-    return int(ratio * 100)
+    return max(0, min(100, int(ratio * 100)))
 
 
 async def run_stat_agent(df: pd.DataFrame, decision_column: str) -> dict:
@@ -44,26 +48,43 @@ async def run_stat_agent(df: pd.DataFrame, decision_column: str) -> dict:
     X = df[feature_cols].copy()
 
     le_target = LabelEncoder()
-    y = le_target.fit_transform(df[decision_column].astype(str))
+    y = le_target.fit_transform(df[decision_column].astype(str).str.strip())
 
     cat_cols = X.select_dtypes(include="object").columns.tolist()
+    
+    # Strip whitespace from all categorical columns (UCI Adult has " Male" not "Male")
+    for c in cat_cols:
+        X[c] = X[c].astype(str).str.strip()
+    
     oe = OrdinalEncoder(handle_unknown="use_encoded_value", unknown_value=-1)
     X[cat_cols] = oe.fit_transform(X[cat_cols])
-    X = X.fillna(X.median())
+    X = X.fillna(X.median(numeric_only=True))
 
-    model = RandomForestClassifier(n_estimators=50, random_state=42, max_depth=8)
+    model = RandomForestClassifier(n_estimators=50, random_state=42, max_depth=5)
     model.fit(X, y)
     y_pred = model.predict(X)
 
     results_per_group = {}
     all_scores = []
 
-    for col in sensitive_cols[:3]:
-        groups = df[col].astype(str).unique().tolist()
+    # Filter to columns that are useful for heatmap analysis
+    # Skip columns with too many unique values (e.g. age with 60+ values)
+    heatmap_cols = []
+    for col in sensitive_cols:
+        n_unique = df[col].astype(str).str.strip().nunique()
+        if n_unique <= MAX_GROUPS_FOR_HEATMAP:
+            heatmap_cols.append(col)
+        else:
+            print(f"[StatAgent] Skipping '{col}' from heatmap ({n_unique} unique values > {MAX_GROUPS_FOR_HEATMAP} limit)")
+
+    for col in heatmap_cols[:4]:
+        # Strip whitespace for consistent group names
+        groups_series = df[col].astype(str).str.strip()
+        groups = groups_series.unique().tolist()
         group_rates = {}
 
         for group in groups:
-            mask = df[col].astype(str) == group
+            mask = groups_series == group
             if mask.sum() < 10:
                 continue
             rate = round(float(y_pred[mask].mean()) * 100, 1)
@@ -73,27 +94,32 @@ async def run_stat_agent(df: pd.DataFrame, decision_column: str) -> dict:
             rates = list(group_rates.values())
             all_scores.append(compute_fairness_score(rates))
 
-        # We try to calculate mathematically strict bias metrics per group
-        # Wrapped in a try/except so if missing data causes a math error, the demo stays alive!
+        # Calculate mathematically strict bias metrics per group
         dp_diff = None
         eo_diff = None
         try:
-            # demographic_parity measures if selection rates match across groups 
-            dp_diff = float(round(demographic_parity_difference(y, y_pred, sensitive_features=df[col].astype(str)), 4))
-            # equalized_odds measures if true positive/false positive rates match across groups
-            eo_diff = float(round(equalized_odds_difference(y, y_pred, sensitive_features=df[col].astype(str)), 4))
+            dp_diff = float(round(demographic_parity_difference(y, y_pred, sensitive_features=groups_series), 4))
+            eo_diff = float(round(equalized_odds_difference(y, y_pred, sensitive_features=groups_series), 4))
         except Exception as e:
             print(f"Could not compute fairlearn metrics for {col}: {e}")
 
+        # Compute gap info
+        max_rate = max(group_rates.values()) if group_rates else 0
+        min_rate = min(group_rates.values()) if group_rates else 0
+        
         results_per_group[col] = {
             "groups": group_rates,
             "most_approved_group": max(group_rates, key=group_rates.get) if group_rates else "unknown",
             "least_approved_group": min(group_rates, key=group_rates.get) if group_rates else "unknown",
+            "max_rate": max_rate,
+            "min_rate": min_rate,
+            "gap": round(max_rate - min_rate, 1),
             "demographic_parity_difference": dp_diff,
             "equalized_odds_difference": eo_diff,
         }
 
     fairness_score = int(np.mean(all_scores)) if all_scores else 50
+    fairness_score = max(0, min(100, fairness_score))
 
     return {
         "fairness_score": fairness_score,
@@ -101,4 +127,10 @@ async def run_stat_agent(df: pd.DataFrame, decision_column: str) -> dict:
         "results_per_group": results_per_group,
         "row_count": len(df),
         "decision_column": decision_column,
+        # Internal objects — stripped by orchestrator before JSON serialization
+        "_model": model,
+        "_oe": oe,
+        "_le": le_target,
+        "_feature_cols": feature_cols,
+        "_cat_cols": cat_cols,
     }

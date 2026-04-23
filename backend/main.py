@@ -22,14 +22,14 @@ audit_store = {}
 
 @app.get("/")
 def home():
-    return {"status": "FairScan is running"}
+    return {"status": "FairScan is running", "version": "1.0.0"}
 
 
 @app.post("/audit")
 async def create_audit(
     file: UploadFile = File(...),
     decision_column: str = Form(...),
-    model_name: str = Form(default="My Model")
+    model_name: str = Form(default="Uploaded Model")
 ):
     contents = await file.read()
     try:
@@ -48,12 +48,14 @@ async def create_audit(
     audit_id = str(uuid.uuid4())
     audit_store[audit_id] = {
         "status": "running",
+        "model_name": model_name,
         "progress": {
             "stat": "idle",
             "root_cause": "idle",
             "legal_mapper": "idle",
             "report_writer": "idle"
-        }
+        },
+        "logs": []
     }
 
     asyncio.create_task(
@@ -106,7 +108,7 @@ class CounterfactualRequest(BaseModel):
 
 @app.post("/counterfactual")
 def run_counterfactual_endpoint(payload: CounterfactualRequest):
-    """Flip one attribute (e.g. Male→Female) and see if the prediction changes."""
+    """Flip one attribute (e.g. Male->Female) and see if the prediction changes."""
     try:
         from counterfactual import run_counterfactual
         return run_counterfactual(
@@ -130,17 +132,24 @@ def download_pdf(audit_id: str):
     return FileResponse(path, media_type="application/pdf", filename="fairscan_report.pdf")
 
 
-@app.get("/demo")
-def get_demo():
+@app.get("/demo/info")
+def get_demo_info():
     """Returns info about the built-in demo dataset."""
     from demo_data import get_demo_info
     return get_demo_info()
 
 
+@app.get("/demo/sample-row")
+def get_demo_sample_row():
+    """Returns a sample data row for the counterfactual toggle."""
+    from demo_data import get_sample_row
+    return get_sample_row()
+
+
 @app.post("/demo/run")
 async def run_demo():
     """One-click demo: loads the built-in UCI Adult dataset and starts an audit.
-    No file upload needed — perfect for the 'Try Demo' button on the frontend."""
+    No file upload needed -- perfect for the 'Try Demo' button on the frontend."""
     from demo_data import get_demo_dataframe
 
     try:
@@ -150,17 +159,19 @@ async def run_demo():
 
     df = df.head(50000)
     decision_column = "class"
-    model_name = "Hiring Model"
+    model_name = "Hiring Screening Model v2"
 
     audit_id = str(uuid.uuid4())
     audit_store[audit_id] = {
         "status": "running",
+        "model_name": model_name,
         "progress": {
             "stat": "idle",
             "root_cause": "idle",
             "legal_mapper": "idle",
             "report_writer": "idle"
-        }
+        },
+        "logs": []
     }
 
     asyncio.create_task(
@@ -168,13 +179,3 @@ async def run_demo():
     )
 
     return {"audit_id": audit_id, "total_rows": len(df)}
-
-
-@app.get("/audit/{audit_id}/sample-row")
-def get_sample_row(audit_id: str):
-    """Returns a sample data row for the counterfactual toggle.
-    Picks a Male applicant with high hours — likely to show a clear prediction flip."""
-    if audit_id not in audit_store:
-        raise HTTPException(status_code=404, detail="Audit not found")
-    from demo_data import get_sample_row
-    return get_sample_row()

@@ -64,7 +64,7 @@ export function BiasHeatmap({ resultsPerGroup }: Props) {
                         </div>
                       </td>
                       <td style={{ padding: "0 4px" }}>
-                        <div style={{ background: "#f8f7f4", color: "#166534", borderRadius: 10, padding: "12px 0", textAlign: "center", fontSize: 14, fontWeight: 700 }}>
+                        <div style={{ background: "#f8f7f4", color: "#666", borderRadius: 10, padding: "12px 0", textAlign: "center", fontSize: 14, fontWeight: 700 }}>
                           {rejected}%
                         </div>
                       </td>
@@ -86,7 +86,7 @@ export function BiasHeatmap({ resultsPerGroup }: Props) {
 
             {gap > 10 && (
               <div style={{ marginTop: 12, fontSize: 14, color: "#991b1b", fontWeight: 500, padding: "16px 20px", background: "#fef2f2", borderRadius: 12, border: "1px solid #fca5a5", lineHeight: 1.5 }}>
-                {colData.least_approved_group}s are approved at {Math.round(maxRate / (minRate || 1) * 10) / 10}× the rate of {colData.most_approved_group}s — a {gap} percentage point gap. This single number triggers both EU AI Act Article 10 and the EEOC 4/5ths rule.
+                {colData.most_approved_group} approved at {minRate > 0 ? (maxRate / minRate).toFixed(1) : "∞"}x the rate of {colData.least_approved_group} — a {gap} percentage point gap. This triggers both EU AI Act Article 10 and the EEOC 4/5ths rule.
               </div>
             )}
           </div>
@@ -94,4 +94,4 @@ export function BiasHeatmap({ resultsPerGroup }: Props) {
       })}
     </div>
   );
-}
+}

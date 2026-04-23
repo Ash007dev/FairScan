@@ -38,6 +38,28 @@ export async function runCounterfactual(payload: {
   return res.json();
 }
 
+export async function getDemoInfo() {
+  const res = await fetch(`${API_URL}/demo/info`);
+  if (!res.ok) throw new Error("Could not load demo info");
+  return res.json();
+}
+
+export async function getSampleRow() {
+  const res = await fetch(`${API_URL}/demo/sample-row`);
+  if (!res.ok) throw new Error("Could not load sample row");
+  return res.json();
+}
+
+export async function startDemoAudit(decisionColumn: string = "class") {
+  const res = await fetch(`${API_URL}/demo/run`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ decision_column: decisionColumn }),
+  });
+  if (!res.ok) throw new Error("Could not start demo audit");
+  return res.json();
+}
+
 export function getPdfUrl(auditId: string): string {
   return `${API_URL}/audit/${auditId}/report.pdf`;
 }
