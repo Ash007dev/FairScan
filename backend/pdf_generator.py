@@ -448,10 +448,35 @@ def _build_pdf(path: str, audit_id: str, result: dict):
     # -- 9. COMPLIANCE MEMO (full text) ----------------------------------------
     story.append(Paragraph("Full Compliance Memo", section_style))
     for line in memo_lines:
-        stripped = line.strip()
-        if stripped:
-            story.append(Paragraph(stripped, body_style))
-            story.append(Spacer(1, 0.1 * cm))
+        stripped = line.replace("--", "—").strip()
+        if not stripped:
+            continue
+            
+        # Check for headings (e.g. EXECUTIVE SUMMARY:)
+        if stripped.endswith(":") and stripped.upper() == stripped:
+            title_cased = " ".join([w.capitalize() for w in stripped[:-1].split()])
+            story.append(Spacer(1, 0.3 * cm))
+            story.append(Paragraph(f"<b>{title_cased}</b>", ParagraphStyle(
+                "MemoHeading", parent=body_style, fontName="Helvetica-Bold", fontSize=11, spaceAfter=4
+            )))
+            continue
+            
+        # Bullet points
+        if stripped.startswith("* "):
+            clean = stripped.lstrip("* ").strip()
+            story.append(Paragraph(f'<font color="{COLOR_RED.hexval()}">&bull;</font> {clean}', bullet_style))
+            continue
+            
+        # Numbered list
+        import re
+        num_match = re.match(r"^(\d+\.)\s(.*)", stripped)
+        if num_match:
+            story.append(Paragraph(f"<b>{num_match.group(1)}</b> {num_match.group(2)}", bullet_style))
+            continue
+
+        # Regular text
+        story.append(Paragraph(stripped, body_style))
+        story.append(Spacer(1, 0.1 * cm))
 
     # -- 10. RISK IF IGNORED ---------------------------------------------------
     in_risk = False
