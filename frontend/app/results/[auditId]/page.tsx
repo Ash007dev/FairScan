@@ -123,7 +123,7 @@ export default function ResultsPage() {
   const medCount = result.legal?.violations?.filter(v => v.risk_level === "medium").length || 0;
 
   const scoreColor = result.fairness_score < 50 ? "#dc2626" : result.fairness_score < 75 ? "#d97706" : "#16a34a";
-  const scoreLabel = result.fairness_score < 50 ? "Critical — action required" : result.fairness_score < 75 ? "Warning — remediation recommended" : "Healthy — no action";
+  const scoreLabel = result.fairness_score < 50 ? "Critical · action required" : result.fairness_score < 75 ? "Warning · remediation recommended" : "Healthy · no action";
 
   return (
     <main style={{ background: "#f5f4f0", minHeight: "100vh", fontFamily: "system-ui, sans-serif" }}>
@@ -185,7 +185,7 @@ export default function ResultsPage() {
         {/* Bias Heatmap */}
         <div style={{ background: "#fff", border: "1px solid #e8e6e0", borderRadius: 20, padding: 24, marginBottom: 16 }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: "#999", letterSpacing: ".06em", marginBottom: 16 }}>
-            BIAS HEATMAP — approval rate by group
+            BIAS HEATMAP · approval rate by group
           </div>
           <BiasHeatmap resultsPerGroup={result.stat?.results_per_group || {}} />
         </div>
@@ -193,7 +193,7 @@ export default function ResultsPage() {
         {/* Root Cause Chart */}
         <div style={{ background: "#fff", border: "1px solid #e8e6e0", borderRadius: 20, padding: 24, marginBottom: 16 }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: "#999", letterSpacing: ".06em", marginBottom: 16 }}>
-            ROOT CAUSE — which column drives the bias (SHAP importance)
+            ROOT CAUSE · which column drives the bias (SHAP importance)
           </div>
           <RootCauseChart
             featureRanking={result.root_cause?.feature_ranking || []}
@@ -204,7 +204,7 @@ export default function ResultsPage() {
         {/* Legal Violations */}
         <div style={{ background: "#fff", border: "1px solid #e8e6e0", borderRadius: 20, padding: 24, marginBottom: 16 }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: "#999", letterSpacing: ".06em", marginBottom: 16 }}>
-            LEGAL MAPPER — regulatory violations
+            LEGAL MAPPER · regulatory violations
           </div>
           {(result.legal?.violations?.length || 0) > 0 ? (
             (result.legal?.violations || []).map((v, i) => (
@@ -217,12 +217,54 @@ export default function ResultsPage() {
 
         {/* Compliance Memo */}
         {result.report?.memo && (
-          <div style={{ background: "#fff", border: "1px solid #e8e6e0", borderRadius: 20, padding: 24, marginBottom: 16 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "#999", letterSpacing: ".06em", marginBottom: 20 }}>
-              COMPLIANCE MEMO — plain English for your team
+          <div style={{ background: "#fff", border: "1px solid #e8e6e0", borderRadius: 20, padding: 32, marginBottom: 16, boxShadow: "0 4px 24px rgba(0,0,0,0.02)" }}>
+            <div style={{ fontSize: 12, fontWeight: 800, color: "#111", letterSpacing: ".08em", marginBottom: 24, borderBottom: "2px solid #f0f0f0", paddingBottom: 16 }}>
+              COMPLIANCE MEMO <span style={{ color: "#aaa", fontWeight: 500, marginLeft: 8 }}>Plain English summary for your team</span>
             </div>
-            <div style={{ fontSize: 15, color: "#333", lineHeight: 1.8, whiteSpace: "pre-wrap", fontWeight: 450 }}>
-              {result.report.memo}
+            <div className="memo-content" style={{ fontSize: 15, color: "#333", fontWeight: 450 }}>
+              {result.report.memo.replace(/--/g, "—").split('\n').map((line, idx, arr) => {
+                const trimmed = line.trim();
+                if (!trimmed) return <div key={idx} style={{ height: 16 }} />;
+                
+                // Headings (e.g. "EXECUTIVE SUMMARY:")
+                if (trimmed.endsWith(':') && trimmed.toUpperCase() === trimmed) {
+                  // Title case the heading
+                  const titleCased = trimmed.slice(0, -1).split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ');
+                  return (
+                    <div key={idx} style={{ fontSize: 14, fontWeight: 800, color: "#111", letterSpacing: ".04em", marginTop: 32, marginBottom: 12, textTransform: "uppercase" }}>
+                      {titleCased}
+                    </div>
+                  );
+                }
+
+                // Bullet points
+                if (trimmed.startsWith('* ')) {
+                  return (
+                    <div key={idx} style={{ display: "flex", gap: 12, marginBottom: 10, lineHeight: 1.6, color: "#444" }}>
+                      <span style={{ color: "#dc2626", fontWeight: 800 }}>•</span>
+                      <span>{trimmed.substring(2)}</span>
+                    </div>
+                  );
+                }
+
+                // Numbered list
+                const numMatch = trimmed.match(/^(\d+\.)\s(.*)/);
+                if (numMatch) {
+                  return (
+                    <div key={idx} style={{ display: "flex", gap: 12, marginBottom: 12, lineHeight: 1.6, color: "#444", background: "#fafaf9", padding: "12px 16px", borderRadius: 8, border: "1px solid #f0f0f0" }}>
+                      <span style={{ fontWeight: 800, color: "#111" }}>{numMatch[1]}</span>
+                      <span>{numMatch[2]}</span>
+                    </div>
+                  );
+                }
+
+                // Regular text
+                return (
+                  <div key={idx} style={{ lineHeight: 1.8, color: "#555", marginBottom: 8 }}>
+                    {trimmed}
+                  </div>
+                );
+              })}
             </div>
           </div>
         )}
@@ -230,7 +272,7 @@ export default function ResultsPage() {
         {/* Counterfactual Toggle */}
         <div style={{ background: "#fff", border: "1px solid #e8e6e0", borderRadius: 20, padding: 24, marginBottom: 32 }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: "#999", letterSpacing: ".06em", marginBottom: 6 }}>
-            COUNTERFACTUAL — the demo moment
+            COUNTERFACTUAL · the demo moment
           </div>
           <div style={{ fontSize: 12, color: "#dc2626", fontWeight: 700, marginBottom: 16, background: "#fef2f2", display: "inline-block", padding: "4px 10px", borderRadius: 6 }}>
             flip one attribute, watch the outcome change
@@ -244,7 +286,7 @@ export default function ResultsPage() {
 
         {/* Footer */}
         <div style={{ textAlign: "center", fontSize: 12, color: "#bbb", paddingBottom: 44, fontWeight: 500 }}>
-          Powered by Google Gemini 1.5 Pro &middot; fairlearn &middot; SHAP &middot; Built for Google AI Hackathon 2026
+          Powered by Google Gemini 1.5 Pro &middot; Fairlearn &middot; SHAP &middot; Built for Google AI Hackathon 2026
         </div>
 
       </div>

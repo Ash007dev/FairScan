@@ -116,7 +116,7 @@ export default function LoadingPage() {
       <div style={{ maxWidth: 600, margin: "0 auto", padding: "32px 20px" }}>
 
         <div style={{ fontSize: 11, fontWeight: 700, color: "#999", letterSpacing: ".08em", marginBottom: 16 }}>
-          AGENT PIPELINE — LIVE STATUS
+          AGENT PIPELINE · LIVE STATUS
         </div>
 
         <AgentTracker progress={progress} />
@@ -128,7 +128,7 @@ export default function LoadingPage() {
         <div style={{ display: "flex", justifyContent: "space-between", marginTop: 12, fontSize: 13, color: "#999", fontWeight: 500 }}>
           <span>{doneCount} of 4 agents complete</span>
           <span style={{ color: isComplete ? "#22c55e" : "#3b82f6", fontWeight: 700 }}>
-            {isComplete ? "Complete — redirecting..." : "Processing..."}
+            {isComplete ? "Complete · redirecting..." : "Processing..."}
           </span>
         </div>
 

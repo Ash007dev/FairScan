@@ -156,13 +156,13 @@ export function CounterfactualToggle({ sampleRow, sensitiveColumns, modelData }:
           opacity: result ? 1 : 0.3
         }}>
           <div style={{ fontSize: 10, fontWeight: 700, color: "#bbb", letterSpacing: ".06em", marginBottom: 12 }}>
-            ORIGINAL ({result?.original?.attribute_value || "—"})
+            ORIGINAL ({result?.original?.attribute_value || ""})
           </div>
           <div style={{ fontSize: 32, fontWeight: 800, color: result ? (isApproved(result.original?.prediction) ? "#22c55e" : "#dc2626") : "#ccc" }}>
             {result ? formatPrediction(result.original?.prediction) : "..."}
           </div>
           <div style={{ fontSize: 13, color: "#aaa", marginTop: 4, fontWeight: 500 }}>
-            {result?.original?.confidence ?? "—"}% confidence
+            {result?.original?.confidence ?? 0}% confidence
           </div>
         </div>
 
@@ -173,13 +173,13 @@ export function CounterfactualToggle({ sampleRow, sensitiveColumns, modelData }:
           borderRadius: 16, padding: 20, opacity: result ? 1 : 0.3
         }}>
           <div style={{ fontSize: 10, fontWeight: 700, color: "#bbb", letterSpacing: ".06em", marginBottom: 12 }}>
-            IF {result?.counterfactual?.attribute_value?.toUpperCase() || activeCase.split("→")[1]?.trim()?.toUpperCase() || "FLIPPED"} — same everything else
+            IF {result?.counterfactual?.attribute_value?.toUpperCase() || activeCase.split("→")[1]?.trim()?.toUpperCase() || "FLIPPED"} · same everything else
           </div>
           <div style={{ fontSize: 32, fontWeight: 800, color: result ? (isApproved(result.counterfactual?.prediction) ? "#22c55e" : "#dc2626") : "#ccc" }}>
             {result ? formatPrediction(result.counterfactual?.prediction) : "..."}
           </div>
           <div style={{ fontSize: 13, color: "#aaa", marginTop: 4, fontWeight: 500 }}>
-            {result?.counterfactual?.confidence ?? "—"}% confidence
+            {result?.counterfactual?.confidence ?? 0}% confidence
           </div>
         </div>
       </div>
@@ -193,7 +193,7 @@ export function CounterfactualToggle({ sampleRow, sensitiveColumns, modelData }:
           fontSize: 14, fontWeight: 700, lineHeight: 1.5
         }}>
           {result.outcome_changed 
-            ? `Outcome changed solely because of ${(result.flip_column || "attribute").toLowerCase()}. Same qualifications, same experience, same everything — only ${(result.flip_column || "attribute").toLowerCase()} is different. This is direct, provable discrimination.`
+            ? `Outcome changed solely because of ${(result.flip_column || "attribute").toLowerCase()}. Same qualifications, same experience, same everything · only ${(result.flip_column || "attribute").toLowerCase()} is different. This is direct, provable discrimination.`
             : `Outcome remains unchanged when switching ${(result.flip_column || "attribute").toLowerCase()}. Confidence shifted by ${result.delta_confidence || 0}%. This suggests the model is robust to bias for this specific attribute change.`}
         </div>
       )}
