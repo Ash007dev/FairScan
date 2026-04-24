@@ -60,7 +60,7 @@ async def run_report_writer_agent(stat_result: dict, root_cause_result: dict) ->
 
     try:
         # temperature=0.3 → slightly creative prose but still consistent
-        memo = call_gemini(prompt, temperature=0.3, agent_name="ReportWriter")
+        memo = await call_gemini(prompt, temperature=0.3, agent_name="ReportWriter")
 
     except Exception as e:
         # Gemini completely failed -- use the f-string fallback so the demo still works

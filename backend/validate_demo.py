@@ -56,7 +56,7 @@ async def main():
         row = df_adult.iloc[0].to_dict()
     
     # Convert types
-    row = {k: (v.item() if hasattr(v, "item") else str(v) if pd.api.types.is_categorical_dtype(v) else v) for k, v in row.items()}
+    row = {k: (v.item() if hasattr(v, "item") else str(v) if isinstance(v, pd.CategoricalDtype) else v) for k, v in row.items()}
     
     print("Counterfactual candidate sex:", row.get("sex"))
     cf_result = run_counterfactual(row, "sex", "Female", model_data)

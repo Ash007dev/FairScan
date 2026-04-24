@@ -4,11 +4,11 @@ gemini_client.py — Shared Gemini caller for all FairScan agents.
 Both legal_mapper_agent and report_writer_agent import from here.
 Handles:
   - Retry logic (max 2 tries per model)
-  - Auto-switch from gemini-1.5-flash → gemini-1.5-pro → gemini-pro on failure
+  - Auto-switch across models on failure
   - Console logging of every raw response (great for debugging during demo)
 """
 
-import time
+import asyncio
 import google.generativeai as genai
 import os
 from dotenv import load_dotenv
@@ -25,7 +25,7 @@ MAX_RETRIES = 2   # attempts per model before switching
 RETRY_DELAY = 1   # seconds to wait between retries
 
 
-def call_gemini(
+async def call_gemini(
     prompt: str,
     temperature: float = 0.1,
     agent_name: str = "Agent",       # just for readable log labels
@@ -34,9 +34,9 @@ def call_gemini(
     Sends a prompt to Gemini and returns the raw response text.
 
     Strategy:
-      1. Try gemini-1.5-flash up to MAX_RETRIES times.
-      2. If all flash attempts fail, try gemini-1.5-pro up to MAX_RETRIES times.
-      3. If that fails too, try legacy gemini-pro.
+      1. Try gemini-2.0-flash up to MAX_RETRIES times.
+      2. If all flash attempts fail, try gemini-2.0-flash-lite up to MAX_RETRIES times.
+      3. If that fails too, try gemini-1.5-flash-latest.
       4. If everything fails, raise RuntimeError so the agent can use its fallback.
 
     Args:
@@ -78,7 +78,9 @@ def call_gemini(
                 print(f"[{agent_name}] ERR {model_name} attempt {attempt} failed: {e}")
                 if attempt < MAX_RETRIES:
                     print(f"[{agent_name}] Retrying in {RETRY_DELAY}s...")
-                    time.sleep(RETRY_DELAY)
+                    # BUG FIX: was time.sleep() — that blocks the entire FastAPI event loop.
+                    # asyncio.sleep() yields control back while waiting, keeping the server responsive.
+                    await asyncio.sleep(RETRY_DELAY)
 
         # Announce the switch to the next model
         print(f"[{agent_name}] All {model_name} attempts failed -- trying next model...")

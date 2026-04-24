@@ -50,12 +50,9 @@ export async function getSampleRow() {
   return res.json();
 }
 
-export async function startDemoAudit(decisionColumn: string = "class") {
-  const res = await fetch(`${API_URL}/demo/run`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ decision_column: decisionColumn }),
-  });
+export async function startDemoAudit() {
+  // BUG FIX: was sending { decision_column } as a JSON body, but /demo/run takes no parameters.
+  const res = await fetch(`${API_URL}/demo/run`, { method: "POST" });
   if (!res.ok) throw new Error("Could not start demo audit");
   return res.json();
 }

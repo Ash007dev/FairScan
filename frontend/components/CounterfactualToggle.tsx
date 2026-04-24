@@ -9,21 +9,38 @@ interface Props {
   sampleRow: Record<string, any>;
   sensitiveColumns: string[];
   modelData: string;
+  resultsPerGroup: Record<string, { groups: Record<string, number> }>;
 }
 
-export function CounterfactualToggle({ sampleRow, sensitiveColumns, modelData }: Props) {
+export function CounterfactualToggle({ sampleRow, sensitiveColumns, modelData, resultsPerGroup }: Props) {
   const [result, setResult] = useState<CounterfactualResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [activeCase, setActiveCase] = useState("");
   const [error, setError] = useState("");
 
-  // Build toggle cases dynamically from sensitive columns + sample row
-  const CASES = [
-    { label: "Sex: Male → Female", col: "sex", from: "Male", to: "Female" },
-    { label: "Sex: Female → Male", col: "sex", from: "Female", to: "Male" },
-    { label: "Race: White → Black", col: "race", from: "White", to: "Black" },
-    { label: "Age: 35 → 55", col: "age", from: "35", to: "55" },
-  ];
+  // Build toggle cases dynamically from whatever columns the backend detected.
+  // For each sensitive column, find its known group values from resultsPerGroup,
+  // then create one "from → to" button per pair of distinct values.
+  const CASES = sensitiveColumns.flatMap(col => {
+    // Find the column in resultsPerGroup (case-insensitive match)
+    const groupKey = Object.keys(resultsPerGroup).find(k => k.toLowerCase() === col.toLowerCase());
+    const groups = groupKey ? Object.keys(resultsPerGroup[groupKey].groups) : [];
+
+    if (groups.length < 2) return [];
+
+    // Build one button per value: "Col: CurrentValue → OtherValue"
+    // Only show flips that are relevant (from the current sample row value to each other value)
+    const currentVal = String(sampleRow[col] ?? sampleRow[Object.keys(sampleRow).find(k => k.toLowerCase() === col.toLowerCase()) ?? ""] ?? groups[0]);
+
+    return groups
+      .filter(g => g !== currentVal)
+      .map(toVal => ({
+        label: `${col.charAt(0).toUpperCase() + col.slice(1)}: ${currentVal} → ${toVal}`,
+        col,
+        from: currentVal,
+        to: toVal,
+      }));
+  });
 
   async function runCase(c: typeof CASES[0]) {
     if (!modelData) {
@@ -102,15 +119,14 @@ export function CounterfactualToggle({ sampleRow, sensitiveColumns, modelData }:
         </div>
       )}
       <div style={{ display: "flex", gap: 10, marginBottom: 24, flexWrap: "wrap" }}>
-        {CASES.map(c => {
-          // Check if column exists in sample row (case insensitive)
-          const actualCol = Object.keys(sampleRow).find(k => k.toLowerCase() === c.col.toLowerCase());
-          if (!actualCol) return null;
-
-          return (
-            <button 
-              key={c.label} 
-              onClick={() => runCase({ ...c, col: actualCol })}
+        {CASES.length === 0 ? (
+          <div style={{ fontSize: 13, color: "#aaa", fontWeight: 500 }}>
+            No sensitive column values found to toggle. Run the demo dataset for the best experience.
+          </div>
+        ) : CASES.map(c => (
+            <button
+              key={c.label}
+              onClick={() => runCase(c)}
               disabled={loading}
               style={{
                 padding: "10px 18px", borderRadius: 12, fontSize: 13, fontWeight: 700,
@@ -125,9 +141,8 @@ export function CounterfactualToggle({ sampleRow, sensitiveColumns, modelData }:
             >
               {c.label}
             </button>
-          );
-        })}
-      </div>
+          ))}
+        </div>
 
       {error && (
         <div style={{ 

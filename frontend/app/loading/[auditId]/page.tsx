@@ -59,19 +59,18 @@ export default function LoadingPage() {
         }
 
         // Sync backend logs to terminal
+        // BUG FIX: was deduplicating by text content — two identical messages would drop the second.
+        // Now we track by index (data.logs.length vs prev.length) so every entry is kept.
         if (data.logs && data.logs.length > 0) {
           setLogs(prev => {
-            // Only add new logs
-            const existingTexts = new Set(prev.map(l => l.text));
-            const newEntries: LogEntry[] = [];
-            for (const entry of data.logs) {
-              const prefix = entry.type === "ok" ? "\u2713" : entry.type === "info" ? "\u2192" : entry.type === "warn" ? "!" : " ";
-              const text = `${prefix} ${entry.text}`;
-              if (!existingTexts.has(text)) {
-                newEntries.push({ text, type: entry.type });
-              }
-            }
-            return newEntries.length > 0 ? [...prev, ...newEntries] : prev;
+            const alreadyShown = prev.length - 1; // -1 for the initial cmd line
+            const newRawEntries = data.logs.slice(alreadyShown);
+            if (newRawEntries.length === 0) return prev;
+            const newEntries: LogEntry[] = newRawEntries.map((entry: { type: string; text: string }) => {
+              const prefix = entry.type === "ok" ? "✓" : entry.type === "info" ? "→" : entry.type === "warn" ? "!" : " ";
+              return { text: `${prefix} ${entry.text}`, type: entry.type };
+            });
+            return [...prev, ...newEntries];
           });
         }
 

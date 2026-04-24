@@ -108,7 +108,7 @@ async def run_legal_mapper_agent(stat_result: dict, root_cause_result: dict) -> 
     violations = None
 
     try:
-        raw_text = call_gemini(prompt, temperature=0.1, agent_name="LegalMapper")
+        raw_text = await call_gemini(prompt, temperature=0.1, agent_name="LegalMapper")
         violations = _parse_gemini_json(raw_text)
         print(f"[LegalMapper] Successfully parsed {len(violations)} violations from Gemini.")
 

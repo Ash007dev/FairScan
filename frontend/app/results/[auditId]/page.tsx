@@ -281,12 +281,13 @@ export default function ResultsPage() {
             sampleRow={sampleRow}
             sensitiveColumns={result.sensitive_columns || result.stat?.sensitive_columns || ["sex"]}
             modelData={result.root_cause?.model_data || ""}
+            resultsPerGroup={result.stat?.results_per_group || {}}
           />
         </div>
 
         {/* Footer */}
         <div style={{ textAlign: "center", fontSize: 12, color: "#bbb", paddingBottom: 44, fontWeight: 500 }}>
-          Powered by Google Gemini 1.5 Pro &middot; Fairlearn &middot; SHAP &middot; Built for Google AI Hackathon 2026
+          Powered by Google Gemini 2.0 Flash &middot; Fairlearn &middot; SHAP &middot; Built for Google AI Hackathon 2026
         </div>
 
       </div>

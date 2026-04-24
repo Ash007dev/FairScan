@@ -17,7 +17,21 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-audit_store = {}
+# Capped in-memory store — max 50 audits, oldest evicted first.
+# Prevents unbounded memory growth during long demo sessions.
+MAX_AUDITS = 50
+
+class CappedAuditStore(dict):
+    """A dict that silently drops the oldest entry when it exceeds MAX_AUDITS."""
+    def __setitem__(self, key, value):
+        if key not in self and len(self) >= MAX_AUDITS:
+            # Remove the first (oldest) key
+            oldest = next(iter(self))
+            super().__delitem__(oldest)
+            print(f"[AuditStore] Evicted oldest audit {oldest[:8]} to stay under {MAX_AUDITS} entries.")
+        super().__setitem__(key, value)
+
+audit_store = CappedAuditStore()
 
 
 @app.get("/")
