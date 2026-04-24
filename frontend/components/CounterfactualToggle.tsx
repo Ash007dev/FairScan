@@ -39,6 +39,16 @@ export function CounterfactualToggle({ sampleRow, sensitiveColumns, modelData }:
     // Adjust base row for the case (e.g. if we want to flip FROM female, start with a female row)
     const baseRow = { ...sampleRow, [c.col]: String(c.from) };
     
+    // Fix correlated field mismatch for the Demo dataset
+    // (If we force sex to Female, we must force relationship to Wife, otherwise the model sees "Female Husband")
+    if (c.col.toLowerCase() === "sex" && sampleRow.relationship) {
+      if (String(c.from).toLowerCase() === "female" && baseRow.relationship.toLowerCase() === "husband") {
+        baseRow.relationship = "Wife";
+      } else if (String(c.from).toLowerCase() === "male" && baseRow.relationship.toLowerCase() === "wife") {
+        baseRow.relationship = "Husband";
+      }
+    }
+    
     try {
       const res = await fetch(`${API_URL}/counterfactual`, {
         method: "POST",
@@ -77,8 +87,20 @@ export function CounterfactualToggle({ sampleRow, sensitiveColumns, modelData }:
     return "Rejected";
   };
 
+  const profileSummary = [
+    sampleRow.age ? `${sampleRow.age}yo` : null,
+    sampleRow.education,
+    sampleRow.occupation,
+    sampleRow["hours-per-week"] ? `${sampleRow["hours-per-week"]} hrs/wk` : null
+  ].filter(Boolean).join(" · ");
+
   return (
     <div style={{ background: "#f8f7f4", borderRadius: 16, padding: 24, border: "1px solid #e8e6e0" }}>
+      {profileSummary && (
+        <div style={{ fontSize: 13, fontWeight: 600, color: "#666", marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 16 }}>👤</span> Applicant Profile: <span style={{ color: "#111" }}>{profileSummary}</span>
+        </div>
+      )}
       <div style={{ display: "flex", gap: 10, marginBottom: 24, flexWrap: "wrap" }}>
         {CASES.map(c => {
           // Check if column exists in sample row (case insensitive)
