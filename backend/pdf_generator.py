@@ -254,6 +254,15 @@ def _build_pdf(path: str, audit_id: str, result: dict):
         eo = data.get("equalized_odds_difference", "N/A")
         meth_body += f"&bull; <b>{col.capitalize()}</b> - DP Diff: {dp} | EO Diff: {eo}<br/>"
 
+    meth_body += """<br/><b>Glossary / Legend:</b><br/>
+    <font size="8">
+    &bull; <b>pp (Percentage Points):</b> The simple difference between two percentages.<br/>
+    &bull; <b>Demographic Parity (DP):</b> Checks if the approval rate is identical across different demographic groups.<br/>
+    &bull; <b>Equalized Odds (EO):</b> Checks if the model predicts equally accurately across groups.<br/>
+    &bull; <b>Proxy Variable:</b> A seemingly neutral feature (like 'zip code') that strongly correlates with a protected trait (like 'race').<br/>
+    </font>
+    """
+
     methodology_data.append([Paragraph(meth_body, ParagraphStyle("MethBody", parent=body_style, leading=14))])
     
     meth_table = Table(methodology_data, colWidths=[16.5 * cm])

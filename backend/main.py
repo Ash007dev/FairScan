@@ -43,7 +43,19 @@ async def create_audit(
             detail=f"Column '{decision_column}' not found. Available columns: {df.columns.tolist()}"
         )
 
-    df = df.head(50000)
+    if len(df) < 50:
+        raise HTTPException(
+            status_code=400,
+            detail="Dataset is too small to perform meaningful statistical bias analysis. Please upload at least 50 rows."
+        )
+
+    if len(df.columns) < 3:
+        raise HTTPException(
+            status_code=400,
+            detail="The uploaded data appears out of context or unstructured. Expected tabular data with multiple features (e.g., age, race, income) to analyze bias."
+        )
+
+    df = df.head(20000)
 
     audit_id = str(uuid.uuid4())
     audit_store[audit_id] = {
@@ -68,10 +80,16 @@ async def create_audit(
 async def run_audit_background(audit_id, df, decision_column, model_name):
     try:
         from orchestrator import run_audit
-        result = await run_audit(df, decision_column, model_name, audit_id, audit_store)
+        result = await asyncio.wait_for(
+            run_audit(df, decision_column, model_name, audit_id, audit_store),
+            timeout=60.0
+        )
         # Update in-place so the "progress" dict is preserved (frontend needs it)
         audit_store[audit_id]["status"] = "complete"
         audit_store[audit_id]["result"] = result
+    except asyncio.TimeoutError:
+        audit_store[audit_id]["status"] = "error"
+        audit_store[audit_id]["message"] = "Audit timed out. The dataset is too large or the AI agents took too long to respond."
     except Exception as e:
         import traceback
         traceback.print_exc()  # Full stack trace in server logs for debugging

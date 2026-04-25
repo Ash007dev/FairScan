@@ -223,6 +223,23 @@ export default function ResultsPage() {
               </div>
             ))}
           </div>
+          <div style={{ marginTop: 24, paddingTop: 16, borderTop: "1px solid #e8e6e0" }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "#999", letterSpacing: ".06em", marginBottom: 12 }}>GLOSSARY / LEGEND</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+              <div style={{ fontSize: 13, color: "#444", lineHeight: 1.5 }}>
+                <strong style={{ color: "#111" }}>pp (Percentage Points):</strong> The simple difference between two percentages (e.g., 60% and 40% has a 20pp gap).
+              </div>
+              <div style={{ fontSize: 13, color: "#444", lineHeight: 1.5 }}>
+                <strong style={{ color: "#111" }}>Demographic Parity (DP):</strong> Checks if the approval rate is identical across different demographic groups.
+              </div>
+              <div style={{ fontSize: 13, color: "#444", lineHeight: 1.5 }}>
+                <strong style={{ color: "#111" }}>Equalized Odds (EO):</strong> Checks if the model predicts equally accurately across groups (true positive/false positive rates).
+              </div>
+              <div style={{ fontSize: 13, color: "#444", lineHeight: 1.5 }}>
+                <strong style={{ color: "#111" }}>Proxy Variable:</strong> A seemingly neutral feature (like 'zip code') that actually strongly correlates with a protected trait (like 'race').
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Bias Heatmap */}
