@@ -13,8 +13,24 @@ async def run_root_cause_agent(df: pd.DataFrame, decision_column: str) -> dict:
     feature_cols = [c for c in df.columns if c != decision_column]
     X = df[feature_cols].copy()
 
+    # Keep only top 2 classes to prevent bugs from 3+ classes
+    df[decision_column] = df[decision_column].astype(str).str.strip()
+    top_classes = df[decision_column].value_counts().nlargest(2).index.tolist()
+    df = df[df[decision_column].isin(top_classes)].copy()
+    
+    # Identify the "positive" (Approved) class
+    pos_class = top_classes[0]
+    for c in top_classes:
+        cl = c.lower()
+        if any(w in cl for w in ["approv", "yes", "1", ">50", "good", "pass"]):
+            pos_class = c
+            break
+            
+    neg_class = [c for c in top_classes if c != pos_class][0] if len(top_classes) > 1 else top_classes[0]
+    df[decision_column] = df[decision_column].map({neg_class: "0_Rejected", pos_class: "1_Approved"})
+
     le = LabelEncoder()
-    y = le.fit_transform(df[decision_column].astype(str).str.strip())
+    y = le.fit_transform(df[decision_column])
 
     cat_cols = X.select_dtypes(include="object").columns.tolist()
     

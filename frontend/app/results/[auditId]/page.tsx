@@ -182,6 +182,66 @@ export default function ResultsPage() {
           </div>
         </div>
 
+        {/* Audit Quality Validation */}
+        <div style={{ background: "#fff", border: "1px solid #e8e6e0", borderRadius: 16, padding: "20px 24px", marginBottom: 16 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: result.validation_warnings?.length ? 16 : 0 }}>
+            <div style={{ background: result.validation_warnings?.length ? "#fef2f2" : "#f0fdf4", color: result.validation_warnings?.length ? "#dc2626" : "#16a34a", padding: "6px 10px", borderRadius: 8, fontSize: 13, fontWeight: 700 }}>
+              {result.validation_warnings?.length ? "⚠️ Audit Quality Warning" : "✓ 4 agents cross-checked"}
+            </div>
+            <div style={{ fontSize: 14, color: "#444", fontWeight: 500 }}>
+              {result.validation_warnings?.length 
+                ? `${result.validation_warnings.length} inconsistencies found across agents`
+                : "0 inconsistencies found across statistical, causal, and legal models."}
+            </div>
+          </div>
+          {(result.validation_warnings?.length || 0) > 0 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingTop: 16, borderTop: "1px solid #f0f0f0" }}>
+              {result.validation_warnings.map((w: any, i: number) => (
+                <div key={i} style={{ fontSize: 13, color: "#555", display: "flex", gap: 8, lineHeight: 1.5 }}>
+                  <span style={{ color: "#dc2626", fontWeight: 800 }}>•</span>
+                  <span>{w.message.replace(/--/g, '—')}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Methodology & Metrics */}
+        <div style={{ background: "#fff", border: "1px solid #e8e6e0", borderRadius: 16, padding: "20px 24px", marginBottom: 16 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "#999", letterSpacing: ".06em", marginBottom: 12 }}>METHODOLOGY & METRICS</div>
+          <div style={{ fontSize: 14, color: "#444", lineHeight: 1.6 }}>
+            <div style={{ marginBottom: 8 }}><strong>Method:</strong> Adverse Impact Ratio (EEOC 4/5ths Rule)</div>
+            <div style={{ marginBottom: 8 }}><strong>Formula:</strong> <code style={{ background: "#f5f4f0", padding: "2px 6px", borderRadius: 4, fontSize: 13 }}>min(group_approval_rate) / max(group_approval_rate) × 100</code></div>
+            <div style={{ marginBottom: 12 }}><strong>Interpretation:</strong> Score below 80 = legally significant adverse impact under US law.</div>
+            
+            <div style={{ fontWeight: 600, marginTop: 16, marginBottom: 8, color: "#222" }}>Supporting Fairlearn Metrics:</div>
+            {Object.entries(result.stat?.results_per_group || {}).slice(0, 2).map(([col, data]: any) => (
+              <div key={col} style={{ marginBottom: 8, paddingLeft: 12, borderLeft: "2px solid #e8e6e0" }}>
+                <div style={{ fontWeight: 600, textTransform: "capitalize", fontSize: 13 }}>{col}</div>
+                <div style={{ fontSize: 13, color: "#666" }}>• Demographic Parity Difference: {data.demographic_parity_difference ?? "N/A"}</div>
+                <div style={{ fontSize: 13, color: "#666" }}>• Equalized Odds Difference: {data.equalized_odds_difference ?? "N/A"}</div>
+              </div>
+            ))}
+          </div>
+          <div style={{ marginTop: 24, paddingTop: 16, borderTop: "1px solid #e8e6e0" }}>
+            <div style={{ fontSize: 11, fontWeight: 700, color: "#999", letterSpacing: ".06em", marginBottom: 12 }}>GLOSSARY / LEGEND</div>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+              <div style={{ fontSize: 13, color: "#444", lineHeight: 1.5 }}>
+                <strong style={{ color: "#111" }}>pp (Percentage Points):</strong> The simple difference between two percentages (e.g., 60% and 40% has a 20pp gap).
+              </div>
+              <div style={{ fontSize: 13, color: "#444", lineHeight: 1.5 }}>
+                <strong style={{ color: "#111" }}>Demographic Parity (DP):</strong> Checks if the approval rate is identical across different demographic groups.
+              </div>
+              <div style={{ fontSize: 13, color: "#444", lineHeight: 1.5 }}>
+                <strong style={{ color: "#111" }}>Equalized Odds (EO):</strong> Checks if the model predicts equally accurately across groups (true positive/false positive rates).
+              </div>
+              <div style={{ fontSize: 13, color: "#444", lineHeight: 1.5 }}>
+                <strong style={{ color: "#111" }}>Proxy Variable:</strong> A seemingly neutral feature (like 'zip code') that actually strongly correlates with a protected trait (like 'race').
+              </div>
+            </div>
+          </div>
+        </div>
+
         {/* Bias Heatmap */}
         <div style={{ background: "#fff", border: "1px solid #e8e6e0", borderRadius: 20, padding: 24, marginBottom: 16 }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: "#999", letterSpacing: ".06em", marginBottom: 16 }}>
@@ -242,7 +302,21 @@ export default function ResultsPage() {
                   return (
                     <div key={idx} style={{ display: "flex", gap: 12, marginBottom: 10, lineHeight: 1.6, color: "#444" }}>
                       <span style={{ color: "#dc2626", fontWeight: 800 }}>•</span>
-                      <span>{trimmed.substring(2)}</span>
+                      <span style={{ flex: 1 }}>
+                        {(() => {
+                          const text = trimmed.substring(2).replace(/\*\*/g, '');
+                          const colonIdx = text.indexOf(':');
+                          if (colonIdx > 0 && colonIdx < 50) {
+                            return (
+                              <>
+                                <strong style={{ fontWeight: 700, color: "#111" }}>{text.substring(0, colonIdx + 1)}</strong>
+                                {text.substring(colonIdx + 1)}
+                              </>
+                            );
+                          }
+                          return text;
+                        })()}
+                      </span>
                     </div>
                   );
                 }
@@ -253,7 +327,21 @@ export default function ResultsPage() {
                   return (
                     <div key={idx} style={{ display: "flex", gap: 12, marginBottom: 12, lineHeight: 1.6, color: "#444", background: "#fafaf9", padding: "12px 16px", borderRadius: 8, border: "1px solid #f0f0f0" }}>
                       <span style={{ fontWeight: 800, color: "#111" }}>{numMatch[1]}</span>
-                      <span>{numMatch[2]}</span>
+                      <span style={{ flex: 1 }}>
+                        {(() => {
+                          const text = numMatch[2].replace(/\*\*/g, '');
+                          const colonIdx = text.indexOf(':');
+                          if (colonIdx > 0 && colonIdx < 50) {
+                            return (
+                              <>
+                                <strong style={{ fontWeight: 700, color: "#111" }}>{text.substring(0, colonIdx + 1)}</strong>
+                                {text.substring(colonIdx + 1)}
+                              </>
+                            );
+                          }
+                          return text;
+                        })()}
+                      </span>
                     </div>
                   );
                 }
@@ -261,7 +349,19 @@ export default function ResultsPage() {
                 // Regular text
                 return (
                   <div key={idx} style={{ lineHeight: 1.8, color: "#555", marginBottom: 8 }}>
-                    {trimmed}
+                    {(() => {
+                      const text = trimmed.replace(/\*\*/g, '');
+                      const colonIdx = text.indexOf(':');
+                      if (colonIdx > 0 && colonIdx < 50) {
+                        return (
+                          <>
+                            <strong style={{ fontWeight: 700, color: "#111" }}>{text.substring(0, colonIdx + 1)}</strong>
+                            {text.substring(colonIdx + 1)}
+                          </>
+                        );
+                      }
+                      return text;
+                    })()}
                   </div>
                 );
               })}

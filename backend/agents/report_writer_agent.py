@@ -23,6 +23,15 @@ Write exactly these sections with these exact headings:
 EXECUTIVE SUMMARY:
 (2 sentences max — what was found and how serious it is)
 
+METHODOLOGY:
+Fairness Score: {score}/100
+Method: Adverse Impact Ratio (EEOC 4/5ths Rule)
+Formula: min(group_approval_rate) / max(group_approval_rate) × 100
+Interpretation: Score below 80 = legally significant adverse impact
+Supporting metrics (extract from Group Rates):
+  • Demographic Parity Difference: [value] (fairlearn)
+  • Equalized Odds Difference: [value] (fairlearn)
+
 KEY FINDINGS:
 - (bullet with real number)
 - (bullet with real number)
@@ -79,8 +88,27 @@ async def run_report_writer_agent(stat_result: dict, root_cause_result: dict) ->
                     g_list = [f"{k}: {v}%" for k, v in list(groups.items())[:3]]
                     finding_bullets.append(f"* Disparity detected in {attr}: {', '.join(g_list)}")
 
+        dp_diff_str = "N/A"
+        eo_diff_str = "N/A"
+        if isinstance(group_rates, dict):
+            # Try to get metrics from the first column that has them
+            for attr, data in group_rates.items():
+                if data.get("demographic_parity_difference") is not None:
+                    dp_diff_str = str(data["demographic_parity_difference"])
+                    eo_diff_str = str(data.get("equalized_odds_difference", "N/A"))
+                    break
+        
         memo = f"""EXECUTIVE SUMMARY:
 The Hiring Screening Model v2 demonstrates critical bias against specific demographic groups. The "{top_col}" column is the primary driver, contributing significantly more influence on outcomes than any other feature. The model must not be deployed without remediation.
+
+METHODOLOGY:
+Fairness Score: {score}/100
+Method: Adverse Impact Ratio (EEOC 4/5ths Rule)
+Formula: min(group_approval_rate) / max(group_approval_rate) × 100
+Interpretation: Score below 80 = legally significant adverse impact
+Supporting metrics:
+  • Demographic Parity Difference: {dp_diff_str} (fairlearn)
+  • Equalized Odds Difference: {eo_diff_str} (fairlearn)
 
 KEY FINDINGS:
 {chr(10).join(finding_bullets)}
