@@ -183,15 +183,27 @@ export default function ResultsPage() {
         </div>
 
         {/* Audit Quality Validation */}
-        <div style={{ background: "#fff", border: "1px solid #e8e6e0", borderRadius: 16, padding: "16px 24px", marginBottom: 16, display: "flex", alignItems: "center", gap: 12 }}>
-          <div style={{ background: result.validation_warnings?.length ? "#fef2f2" : "#f0fdf4", color: result.validation_warnings?.length ? "#dc2626" : "#16a34a", padding: "6px 10px", borderRadius: 8, fontSize: 13, fontWeight: 700 }}>
-            {result.validation_warnings?.length ? "⚠️ Audit Quality Warning" : "✓ 4 agents cross-checked"}
+        <div style={{ background: "#fff", border: "1px solid #e8e6e0", borderRadius: 16, padding: "20px 24px", marginBottom: 16 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: result.validation_warnings?.length ? 16 : 0 }}>
+            <div style={{ background: result.validation_warnings?.length ? "#fef2f2" : "#f0fdf4", color: result.validation_warnings?.length ? "#dc2626" : "#16a34a", padding: "6px 10px", borderRadius: 8, fontSize: 13, fontWeight: 700 }}>
+              {result.validation_warnings?.length ? "⚠️ Audit Quality Warning" : "✓ 4 agents cross-checked"}
+            </div>
+            <div style={{ fontSize: 14, color: "#444", fontWeight: 500 }}>
+              {result.validation_warnings?.length 
+                ? `${result.validation_warnings.length} inconsistencies found across agents`
+                : "0 inconsistencies found across statistical, causal, and legal models."}
+            </div>
           </div>
-          <div style={{ fontSize: 14, color: "#444", fontWeight: 500 }}>
-            {result.validation_warnings?.length 
-              ? `${result.validation_warnings.length} inconsistencies found: ${result.validation_warnings.map(w => w.message).join(' ')}`
-              : "0 inconsistencies found across statistical, causal, and legal models."}
-          </div>
+          {(result.validation_warnings?.length || 0) > 0 && (
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, paddingTop: 16, borderTop: "1px solid #f0f0f0" }}>
+              {result.validation_warnings.map((w: any, i: number) => (
+                <div key={i} style={{ fontSize: 13, color: "#555", display: "flex", gap: 8, lineHeight: 1.5 }}>
+                  <span style={{ color: "#dc2626", fontWeight: 800 }}>•</span>
+                  <span>{w.message.replace(/--/g, '—')}</span>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Methodology & Metrics */}
@@ -273,7 +285,21 @@ export default function ResultsPage() {
                   return (
                     <div key={idx} style={{ display: "flex", gap: 12, marginBottom: 10, lineHeight: 1.6, color: "#444" }}>
                       <span style={{ color: "#dc2626", fontWeight: 800 }}>•</span>
-                      <span>{trimmed.substring(2)}</span>
+                      <span style={{ flex: 1 }}>
+                        {(() => {
+                          const text = trimmed.substring(2).replace(/\*\*/g, '');
+                          const colonIdx = text.indexOf(':');
+                          if (colonIdx > 0 && colonIdx < 50) {
+                            return (
+                              <>
+                                <strong style={{ fontWeight: 700, color: "#111" }}>{text.substring(0, colonIdx + 1)}</strong>
+                                {text.substring(colonIdx + 1)}
+                              </>
+                            );
+                          }
+                          return text;
+                        })()}
+                      </span>
                     </div>
                   );
                 }
@@ -284,7 +310,21 @@ export default function ResultsPage() {
                   return (
                     <div key={idx} style={{ display: "flex", gap: 12, marginBottom: 12, lineHeight: 1.6, color: "#444", background: "#fafaf9", padding: "12px 16px", borderRadius: 8, border: "1px solid #f0f0f0" }}>
                       <span style={{ fontWeight: 800, color: "#111" }}>{numMatch[1]}</span>
-                      <span>{numMatch[2]}</span>
+                      <span style={{ flex: 1 }}>
+                        {(() => {
+                          const text = numMatch[2].replace(/\*\*/g, '');
+                          const colonIdx = text.indexOf(':');
+                          if (colonIdx > 0 && colonIdx < 50) {
+                            return (
+                              <>
+                                <strong style={{ fontWeight: 700, color: "#111" }}>{text.substring(0, colonIdx + 1)}</strong>
+                                {text.substring(colonIdx + 1)}
+                              </>
+                            );
+                          }
+                          return text;
+                        })()}
+                      </span>
                     </div>
                   );
                 }
@@ -292,7 +332,19 @@ export default function ResultsPage() {
                 // Regular text
                 return (
                   <div key={idx} style={{ lineHeight: 1.8, color: "#555", marginBottom: 8 }}>
-                    {trimmed}
+                    {(() => {
+                      const text = trimmed.replace(/\*\*/g, '');
+                      const colonIdx = text.indexOf(':');
+                      if (colonIdx > 0 && colonIdx < 50) {
+                        return (
+                          <>
+                            <strong style={{ fontWeight: 700, color: "#111" }}>{text.substring(0, colonIdx + 1)}</strong>
+                            {text.substring(colonIdx + 1)}
+                          </>
+                        );
+                      }
+                      return text;
+                    })()}
                   </div>
                 );
               })}

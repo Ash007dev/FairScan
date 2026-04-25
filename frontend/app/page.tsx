@@ -83,10 +83,7 @@ export default function UploadPage() {
           Fair<span style={{ color: "#dc2626" }}>Scan</span>
         </span>
         <div style={{ display: "flex", gap: 32, alignItems: "center" }}>
-          {["How it works", "Docs", "About"].map(l => (
-            <span key={l} style={{ fontSize: 13, color: "#777", cursor: "pointer", fontWeight: 500 }}>{l}</span>
-          ))}
-          <button style={{ padding: "8px 18px", border: "1px solid #e8e6e0", borderRadius: 8, background: "#fff", fontSize: 13, fontWeight: 600, cursor: "pointer" }}>Sign in</button>
+          {/* Nav links removed for cleaner MVP */}
         </div>
       </nav>
 

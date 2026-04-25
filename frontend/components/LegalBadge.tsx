@@ -25,9 +25,12 @@ export function LegalBadge({ violation }: { violation: Violation }) {
         <span style={{ fontSize: 16, fontWeight: 800, color: "#111" }}>
           {violation.regulation}
         </span>
-        <span style={{ marginLeft: "auto", fontSize: 12, fontWeight: 600, color: "#bbb" }}>
-          Deadline: {violation.deadline}
-        </span>
+        <div style={{ marginLeft: "auto", display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
+          <span style={{ fontSize: 9, fontWeight: 800, color: "#aaa", textTransform: "uppercase", letterSpacing: ".08em" }}>Deadline</span>
+          <span style={{ fontSize: 11, fontWeight: 800, color: c.text, background: c.bg, padding: "2px 8px", borderRadius: 6, border: `1px solid ${c.border}` }}>
+            {violation.deadline}
+          </span>
+        </div>
       </div>
       <div style={{ fontSize: 14, color: "#666", marginBottom: 16, lineHeight: 1.6, fontWeight: 450 }}>
         {violation.finding}

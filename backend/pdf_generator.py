@@ -517,7 +517,13 @@ def _build_pdf(path: str, audit_id: str, result: dict):
 
     # -- 9. COMPLIANCE MEMO (full text) ----------------------------------------
     story.append(Paragraph("Full Compliance Memo", section_style))
-    in_methodology = False
+    
+    def _bold_prefix(text: str) -> str:
+        colon_idx = text.find(":")
+        if 0 < colon_idx < 50:
+            return f"<b>{text[:colon_idx+1]}</b>{text[colon_idx+1:]}"
+        return text
+
     for line in memo_lines:
         stripped = line.replace("--", "—").replace("**", "").strip()
         if not stripped:
@@ -525,7 +531,6 @@ def _build_pdf(path: str, audit_id: str, result: dict):
             
         # Check for headings (e.g. EXECUTIVE SUMMARY:)
         if stripped.endswith(":") and stripped.upper() == stripped:
-            in_methodology = (stripped.upper() == "METHODOLOGY:")
             title_cased = " ".join([w.capitalize() for w in stripped[:-1].split()])
             story.append(Spacer(1, 0.3 * cm))
             story.append(Paragraph(f"<b>{title_cased}</b>", ParagraphStyle(
@@ -536,28 +541,18 @@ def _build_pdf(path: str, audit_id: str, result: dict):
         # Bullet points
         if stripped.startswith("* ") or stripped.startswith("• "):
             clean = stripped.lstrip("*• ").strip()
-            if in_methodology and ":" in clean:
-                parts = clean.split(":", 1)
-                clean = f"<b><font color='{COLOR_RED.hexval()}'>{parts[0]}:</font></b>{parts[1]}"
-            story.append(Paragraph(f'<font color="{COLOR_RED.hexval()}">&bull;</font> {clean}', bullet_style))
+            story.append(Paragraph(f'<font color="{COLOR_RED.hexval()}">&bull;</font> {_bold_prefix(clean)}', bullet_style))
             continue
             
         # Numbered list
         import re
         num_match = re.match(r"^(\d+\.)\s(.*)", stripped)
         if num_match:
-            story.append(Paragraph(f"<b>{num_match.group(1)}</b> {num_match.group(2)}", bullet_style))
+            story.append(Paragraph(f"<b>{num_match.group(1)}</b> {_bold_prefix(num_match.group(2))}", bullet_style))
             continue
 
         # Regular text
-        if in_methodology and ":" in stripped:
-            parts = stripped.split(":", 1)
-            formatted_text = f"<b><font color='{COLOR_RED.hexval()}'>{parts[0]}:</font></b>{parts[1]}"
-            story.append(Paragraph(formatted_text, body_style))
-            story.append(Spacer(1, 0.1 * cm))
-            continue
-
-        story.append(Paragraph(stripped, body_style))
+        story.append(Paragraph(_bold_prefix(stripped), body_style))
         story.append(Spacer(1, 0.1 * cm))
 
     # -- 10. RISK IF IGNORED ---------------------------------------------------
