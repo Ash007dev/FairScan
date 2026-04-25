@@ -1,6 +1,6 @@
 "use client";
 
-type AgentStatus = "idle" | "running" | "done";
+type AgentStatus = "idle" | "running" | "done" | "error";
 
 interface Props {
   progress: Record<string, AgentStatus>;
@@ -44,18 +44,20 @@ export function AgentTracker({ progress }: Props) {
         const status: AgentStatus = progress[agent.key] || "idle";
         const isDone = status === "done";
         const isRunning = status === "running";
+        const isError = status === "error";
         
         const s = {
           idle:    { bg: "#fafaf7", border: "#e8e6e0", dot: "#d4d2ca", text: "#ccc" },
           running: { bg: "#eff6ff", border: "#bfdbfe", dot: "#3b82f6", text: "#2563eb" },
           done:    { bg: "#f0fdf4", border: "#bbf7d0", dot: "#22c55e", text: "#16a34a" },
-        }[status];
+          error:   { bg: "#fef2f2", border: "#fca5a5", dot: "#dc2626", text: "#991b1b" },
+        }[status] || { bg: "#fafaf7", border: "#e8e6e0", dot: "#d4d2ca", text: "#ccc" };
 
         return (
           <div key={agent.key} style={{
             display: "flex", alignItems: "center", gap: 16,
-            background: isDone ? "#f0fdf4" : isRunning ? "#eff6ff" : "#fff", 
-            border: isDone ? "2px solid #bbf7d0" : isRunning ? "2px solid #bfdbfe" : "1px solid #e8e6e0",
+            background: isError ? "#fef2f2" : isDone ? "#f0fdf4" : isRunning ? "#eff6ff" : "#fff", 
+            border: isError ? "2px solid #fca5a5" : isDone ? "2px solid #bbf7d0" : isRunning ? "2px solid #bfdbfe" : "1px solid #e8e6e0",
             borderRadius: 16, padding: "18px 20px",
             transition: "all 0.5s cubic-bezier(0.4, 0, 0.2, 1)",
             opacity: status === "idle" ? 0.4 : 1,
@@ -69,7 +71,7 @@ export function AgentTracker({ progress }: Props) {
             
             <div style={{ 
               width: 44, height: 44, borderRadius: 12, 
-              background: isDone ? "#dcfce7" : isRunning ? "#dbeafe" : "#fafaf9",
+              background: isError ? "#fee2e2" : isDone ? "#dcfce7" : isRunning ? "#dbeafe" : "#fafaf9",
               display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20
             }}>
               {agent.icon}
@@ -82,7 +84,7 @@ export function AgentTracker({ progress }: Props) {
 
             <div style={{ textAlign: "right" }}>
               <div style={{ fontSize: 13, fontWeight: 700, color: s.text, display: "flex", alignItems: "center", gap: 4, justifyContent: "flex-end" }}>
-                {isDone ? "✓ Done" : isRunning ? "Running..." : "Waiting"}
+                {isError ? "✗ Error" : isDone ? "✓ Done" : isRunning ? "Running..." : "Waiting"}
               </div>
               {isDone && <div style={{ fontSize: 11, color: "#999", marginTop: 2, fontWeight: 500 }}>in {agent.time}</div>}
             </div>

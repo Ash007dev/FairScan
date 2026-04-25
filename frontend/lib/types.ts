@@ -52,6 +52,7 @@ export interface AuditResult {
   root_cause: RootCauseResult;
   legal: LegalResult;
   report: ReportResult;
+  validation_warnings?: { type: string; message: string; severity: string }[];
 }
 
 export interface AuditStatus {

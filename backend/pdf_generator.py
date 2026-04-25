@@ -245,7 +245,7 @@ def _build_pdf(path: str, audit_id: str, result: dict):
     exec_lines = []
 
     for line in memo_lines:
-        stripped = line.strip()
+        stripped = line.strip().replace("**", "")
         if stripped.upper().startswith("EXECUTIVE SUMMARY"):
             in_exec_summary = True
             after_colon = stripped.split(":", 1)[-1].strip()
@@ -253,7 +253,7 @@ def _build_pdf(path: str, audit_id: str, result: dict):
                 exec_lines.append(after_colon)
         elif in_exec_summary:
             if any(stripped.upper().startswith(k) for k in
-                   ["KEY FINDINGS", "ROOT CAUSE", "REQUIRED ACTIONS", "RISK IF IGNORED"]):
+                   ["METHODOLOGY", "KEY FINDINGS", "ROOT CAUSE", "REQUIRED ACTIONS", "RISK IF IGNORED"]):
                 break
             if stripped:
                 exec_lines.append(stripped)
@@ -265,13 +265,51 @@ def _build_pdf(path: str, audit_id: str, result: dict):
         story.append(Paragraph(line, body_style))
         story.append(Spacer(1, 0.15 * cm))
 
+    # -- 3.5 METHODOLOGY --------------------------------------------------------
+    in_methodology_sec = False
+    methodology_lines = []
+    for line in memo_lines:
+        stripped = line.strip().replace("**", "")
+        if stripped.upper().startswith("METHODOLOGY"):
+            in_methodology_sec = True
+            after_colon = stripped.split(":", 1)[-1].strip()
+            if after_colon:
+                methodology_lines.append(after_colon)
+        elif in_methodology_sec:
+            if any(stripped.upper().startswith(k) for k in
+                   ["KEY FINDINGS", "ROOT CAUSE", "REQUIRED ACTIONS", "RISK IF IGNORED"]):
+                break
+            if stripped:
+                methodology_lines.append(stripped)
+
+    if methodology_lines:
+        story.append(Paragraph("Methodology", section_style))
+        for line in methodology_lines:
+            if ":" in line:
+                parts = line.split(":", 1)
+                clean_line = f"<b><font color='{COLOR_RED.hexval()}'>{parts[0]}:</font></b>{parts[1]}"
+                if line.startswith("* ") or line.startswith("• "):
+                    # Remove the original bullet so we can style our own
+                    clean_line = clean_line.replace("* ", "", 1).replace("• ", "", 1)
+                    story.append(Paragraph(f'<font color="{COLOR_RED.hexval()}">&bull;</font> {clean_line}', bullet_style))
+                else:
+                    story.append(Paragraph(clean_line, body_style))
+                    story.append(Spacer(1, 0.1 * cm))
+            else:
+                if line.startswith("* ") or line.startswith("• "):
+                    clean_line = line.lstrip("*• ")
+                    story.append(Paragraph(f'<font color="{COLOR_RED.hexval()}">&bull;</font> {clean_line}', bullet_style))
+                else:
+                    story.append(Paragraph(line, body_style))
+                    story.append(Spacer(1, 0.1 * cm))
+
     # -- 4. KEY FINDINGS (bullet points) ---------------------------------------
     story.append(Paragraph("Key Findings", section_style))
 
     in_findings = False
     findings_lines = []
     for line in memo_lines:
-        stripped = line.strip()
+        stripped = line.strip().replace("**", "")
         if stripped.upper().startswith("KEY FINDINGS"):
             in_findings = True
         elif in_findings:
@@ -428,7 +466,7 @@ def _build_pdf(path: str, audit_id: str, result: dict):
     in_actions = False
     action_lines = []
     for line in memo_lines:
-        stripped = line.strip()
+        stripped = line.strip().replace("**", "")
         if stripped.upper().startswith("REQUIRED ACTIONS"):
             in_actions = True
         elif in_actions:
@@ -447,13 +485,15 @@ def _build_pdf(path: str, audit_id: str, result: dict):
 
     # -- 9. COMPLIANCE MEMO (full text) ----------------------------------------
     story.append(Paragraph("Full Compliance Memo", section_style))
+    in_methodology = False
     for line in memo_lines:
-        stripped = line.replace("--", "—").strip()
+        stripped = line.replace("--", "—").replace("**", "").strip()
         if not stripped:
             continue
             
         # Check for headings (e.g. EXECUTIVE SUMMARY:)
         if stripped.endswith(":") and stripped.upper() == stripped:
+            in_methodology = (stripped.upper() == "METHODOLOGY:")
             title_cased = " ".join([w.capitalize() for w in stripped[:-1].split()])
             story.append(Spacer(1, 0.3 * cm))
             story.append(Paragraph(f"<b>{title_cased}</b>", ParagraphStyle(
@@ -462,8 +502,11 @@ def _build_pdf(path: str, audit_id: str, result: dict):
             continue
             
         # Bullet points
-        if stripped.startswith("* "):
-            clean = stripped.lstrip("* ").strip()
+        if stripped.startswith("* ") or stripped.startswith("• "):
+            clean = stripped.lstrip("*• ").strip()
+            if in_methodology and ":" in clean:
+                parts = clean.split(":", 1)
+                clean = f"<b><font color='{COLOR_RED.hexval()}'>{parts[0]}:</font></b>{parts[1]}"
             story.append(Paragraph(f'<font color="{COLOR_RED.hexval()}">&bull;</font> {clean}', bullet_style))
             continue
             
@@ -475,6 +518,13 @@ def _build_pdf(path: str, audit_id: str, result: dict):
             continue
 
         # Regular text
+        if in_methodology and ":" in stripped:
+            parts = stripped.split(":", 1)
+            formatted_text = f"<b><font color='{COLOR_RED.hexval()}'>{parts[0]}:</font></b>{parts[1]}"
+            story.append(Paragraph(formatted_text, body_style))
+            story.append(Spacer(1, 0.1 * cm))
+            continue
+
         story.append(Paragraph(stripped, body_style))
         story.append(Spacer(1, 0.1 * cm))
 
@@ -482,7 +532,7 @@ def _build_pdf(path: str, audit_id: str, result: dict):
     in_risk = False
     risk_lines = []
     for line in memo_lines:
-        stripped = line.strip()
+        stripped = line.strip().replace("**", "")
         if stripped.upper().startswith("RISK IF IGNORED"):
             in_risk = True
             after = stripped.split(":", 1)[-1].strip()

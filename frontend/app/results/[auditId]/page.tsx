@@ -182,6 +182,18 @@ export default function ResultsPage() {
           </div>
         </div>
 
+        {/* Audit Quality Validation */}
+        <div style={{ background: "#fff", border: "1px solid #e8e6e0", borderRadius: 16, padding: "16px 24px", marginBottom: 16, display: "flex", alignItems: "center", gap: 12 }}>
+          <div style={{ background: result.validation_warnings?.length ? "#fef2f2" : "#f0fdf4", color: result.validation_warnings?.length ? "#dc2626" : "#16a34a", padding: "6px 10px", borderRadius: 8, fontSize: 13, fontWeight: 700 }}>
+            {result.validation_warnings?.length ? "⚠️ Audit Quality Warning" : "✓ 4 agents cross-checked"}
+          </div>
+          <div style={{ fontSize: 14, color: "#444", fontWeight: 500 }}>
+            {result.validation_warnings?.length 
+              ? `${result.validation_warnings.length} inconsistencies found: ${result.validation_warnings.map(w => w.message).join(' ')}`
+              : "0 inconsistencies found across statistical, causal, and legal models."}
+          </div>
+        </div>
+
         {/* Bias Heatmap */}
         <div style={{ background: "#fff", border: "1px solid #e8e6e0", borderRadius: 20, padding: 24, marginBottom: 16 }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: "#999", letterSpacing: ".06em", marginBottom: 16 }}>

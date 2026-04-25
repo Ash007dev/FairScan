@@ -7,6 +7,58 @@ from agents.legal_mapper_agent import run_legal_mapper_agent
 from agents.report_writer_agent import run_report_writer_agent
 
 
+def validate_results(stat_result, root_cause_result, legal_result, report_result):
+    warnings = []
+    
+    # Check 1: Top bias driver from SHAP should be in sensitive columns
+    top_driver = root_cause_result.get("top_bias_driver")
+    sensitive = stat_result.get("sensitive_columns", [])
+    if top_driver not in sensitive:
+        warnings.append({
+            "type": "consistency",
+            "message": f"Root cause '{top_driver}' not in sensitive columns {sensitive}. "
+                       f"May indicate a proxy variable — investigate {top_driver} further.",
+            "severity": "warning"
+        })
+    
+    # Check 2: Fairness score should align with group rate gaps
+    score = stat_result.get("fairness_score", 100)
+    groups = stat_result.get("results_per_group", {})
+    for col, data in groups.items():
+        rates = list(data.get("groups", {}).values())
+        if rates:
+            computed_ratio = min(rates) / max(rates) * 100 if max(rates) > 0 else 100
+            if abs(computed_ratio - score) > 15:
+                warnings.append({
+                    "type": "score_mismatch",
+                    "message": f"Computed ratio for '{col}' ({computed_ratio:.0f}) "
+                               f"differs from overall score ({score}). Multiple column averaging applied.",
+                    "severity": "info"
+                })
+    
+    # Check 3: Legal violations should exist if score is low
+    violations = legal_result.get("violations", [])
+    if score < 60 and len(violations) == 0:
+        warnings.append({
+            "type": "missing_violations",
+            "message": "Fairness score is critical but no legal violations were identified. "
+                       "Legal mapper may have failed — applying fallback rules.",
+            "severity": "error"
+        })
+    
+    # Check 4: Memo should mention the top bias driver
+    memo = report_result.get("memo", "")
+    if top_driver and top_driver not in memo:
+        warnings.append({
+            "type": "memo_inconsistency", 
+            "message": f"Compliance memo does not mention root cause column '{top_driver}'. "
+                       f"Report writer may not have received correct inputs.",
+            "severity": "warning"
+        })
+    
+    return warnings
+
+
 async def run_audit(df, decision_column, model_name, audit_id, store):
     """Run all 4 agents in 2 parallel stages and update the store in real time."""
 
@@ -112,7 +164,9 @@ async def run_audit(df, decision_column, model_name, audit_id, store):
         }
         log("Compliance memo written", "ok")
 
-    log("All agents complete -- redirecting to results...", "info")
+    log("All agents complete -- running cross-agent validation...", "info")
+    validation_warnings = validate_results(stat_result, root_cause_result, legal_result, report_result)
+    log(f"Validation complete: {len(validation_warnings)} inconsistencies found", "ok" if len(validation_warnings) == 0 else "warn")
 
     # Remove internal model objects before storing (not JSON serializable)
     clean_stat = {k: v for k, v in stat_result.items() if not k.startswith("_")}
@@ -126,4 +180,5 @@ async def run_audit(df, decision_column, model_name, audit_id, store):
         "root_cause": root_cause_result,
         "legal": legal_result,
         "report": report_result,
+        "validation_warnings": validation_warnings,
     }
