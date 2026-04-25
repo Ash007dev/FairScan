@@ -235,6 +235,38 @@ def _build_pdf(path: str, audit_id: str, result: dict):
         ("ROUNDEDCORNERS", [8]),
     ]))
     story.append(score_table)
+    story.append(Spacer(1, 0.4 * cm))
+
+    # -- 2b. METHODOLOGY & METRICS ----------------------------------------------
+    methodology_data = [
+        [Paragraph("<b>Methodology & Metrics</b>", ParagraphStyle("MethHead", parent=body_style, fontName="Helvetica-Bold", textColor=COLOR_BLACK))]
+    ]
+    
+    meth_body = f"""
+    <b>Method:</b> Adverse Impact Ratio (EEOC 4/5ths Rule)<br/>
+    <b>Formula:</b> <font face="Courier">min(group_approval_rate) / max(group_approval_rate) × 100</font><br/>
+    <b>Interpretation:</b> Score below 80 = legally significant adverse impact under US law.<br/><br/>
+    <b>Supporting Fairlearn Metrics:</b><br/>
+    """
+    
+    for col, data in list(result.get("stat", {}).get("results_per_group", {}).items())[:2]:
+        dp = data.get("demographic_parity_difference", "N/A")
+        eo = data.get("equalized_odds_difference", "N/A")
+        meth_body += f"&bull; <b>{col.capitalize()}</b> - DP Diff: {dp} | EO Diff: {eo}<br/>"
+
+    methodology_data.append([Paragraph(meth_body, ParagraphStyle("MethBody", parent=body_style, leading=14))])
+    
+    meth_table = Table(methodology_data, colWidths=[16.5 * cm])
+    meth_table.setStyle(TableStyle([
+        ("BACKGROUND",    (0, 0), (-1, -1), COLOR_LIGHT_GRAY),
+        ("BOX",           (0, 0), (-1, -1), 0.5, COLOR_BORDER),
+        ("TOPPADDING",    (0, 0), (-1, -1), 8),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 8),
+        ("LEFTPADDING",   (0, 0), (-1, -1), 12),
+        ("RIGHTPADDING",  (0, 0), (-1, -1), 12),
+        ("ROUNDEDCORNERS", [4]),
+    ]))
+    story.append(meth_table)
     story.append(Spacer(1, 0.6 * cm))
 
     # -- 3. EXECUTIVE SUMMARY ---------------------------------------------------

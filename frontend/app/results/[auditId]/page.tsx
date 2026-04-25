@@ -194,6 +194,25 @@ export default function ResultsPage() {
           </div>
         </div>
 
+        {/* Methodology & Metrics */}
+        <div style={{ background: "#fff", border: "1px solid #e8e6e0", borderRadius: 16, padding: "20px 24px", marginBottom: 16 }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: "#999", letterSpacing: ".06em", marginBottom: 12 }}>METHODOLOGY & METRICS</div>
+          <div style={{ fontSize: 14, color: "#444", lineHeight: 1.6 }}>
+            <div style={{ marginBottom: 8 }}><strong>Method:</strong> Adverse Impact Ratio (EEOC 4/5ths Rule)</div>
+            <div style={{ marginBottom: 8 }}><strong>Formula:</strong> <code style={{ background: "#f5f4f0", padding: "2px 6px", borderRadius: 4, fontSize: 13 }}>min(group_approval_rate) / max(group_approval_rate) × 100</code></div>
+            <div style={{ marginBottom: 12 }}><strong>Interpretation:</strong> Score below 80 = legally significant adverse impact under US law.</div>
+            
+            <div style={{ fontWeight: 600, marginTop: 16, marginBottom: 8, color: "#222" }}>Supporting Fairlearn Metrics:</div>
+            {Object.entries(result.stat?.results_per_group || {}).slice(0, 2).map(([col, data]: any) => (
+              <div key={col} style={{ marginBottom: 8, paddingLeft: 12, borderLeft: "2px solid #e8e6e0" }}>
+                <div style={{ fontWeight: 600, textTransform: "capitalize", fontSize: 13 }}>{col}</div>
+                <div style={{ fontSize: 13, color: "#666" }}>• Demographic Parity Difference: {data.demographic_parity_difference ?? "N/A"}</div>
+                <div style={{ fontSize: 13, color: "#666" }}>• Equalized Odds Difference: {data.equalized_odds_difference ?? "N/A"}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* Bias Heatmap */}
         <div style={{ background: "#fff", border: "1px solid #e8e6e0", borderRadius: 20, padding: 24, marginBottom: 16 }}>
           <div style={{ fontSize: 11, fontWeight: 700, color: "#999", letterSpacing: ".06em", marginBottom: 16 }}>
