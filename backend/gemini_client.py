@@ -19,7 +19,7 @@ genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
 # Try models in order — 2.0-flash is fastest, then lite variant, then legacy
 MODEL_PRIMARY   = "gemini-2.0-flash"
 MODEL_SECONDARY = "gemini-2.0-flash-lite"
-MODEL_TERTIARY  = "gemini-1.5-flash-latest"
+MODEL_TERTIARY  = "gemini-1.5-flash"
 
 MAX_RETRIES = 2   # attempts per model before switching
 RETRY_DELAY = 1   # seconds to wait between retries
