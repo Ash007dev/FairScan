@@ -112,10 +112,10 @@ export function CounterfactualToggle({ sampleRow, sensitiveColumns, modelData, r
   ].filter(Boolean).join(" · ");
 
   return (
-    <div style={{ background: "#f8f7f4", borderRadius: 16, padding: 24, border: "1px solid #e8e6e0" }}>
+    <div style={{ background: "rgba(255,255,255,0.03)", backdropFilter: "blur(16px)", WebkitBackdropFilter: "blur(16px)", borderRadius: 16, padding: 24, border: "1px solid rgba(255,255,255,0.08)" }}>
       {profileSummary && (
-        <div style={{ fontSize: 13, fontWeight: 600, color: "#666", marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}>
-          <span style={{ fontSize: 16 }}>👤</span> Applicant Profile: <span style={{ color: "#111" }}>{profileSummary}</span>
+        <div style={{ fontSize: 12, fontWeight: 600, color: "rgba(255,255,255,0.35)", marginBottom: 16, display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontSize: 14 }}>👤</span> Profile: <span style={{ color: "rgba(255,255,255,0.6)" }}>{profileSummary}</span>
         </div>
       )}
       <div style={{ display: "flex", gap: 10, marginBottom: 24, flexWrap: "wrap" }}>
@@ -129,14 +129,14 @@ export function CounterfactualToggle({ sampleRow, sensitiveColumns, modelData, r
               onClick={() => runCase(c)}
               disabled={loading}
               style={{
-                padding: "10px 18px", borderRadius: 12, fontSize: 13, fontWeight: 700,
-                cursor: loading ? "wait" : "pointer", 
-                border: activeCase === c.label ? "2px solid #dc2626" : "1px solid #000",
-                background: "#000", 
-                color: "#fff",
+                padding: "10px 18px", borderRadius: 12, fontSize: 12, fontWeight: 700,
+                cursor: loading ? "wait" : "pointer",
+                border: activeCase === c.label ? "2px solid #a855f7" : "1px solid rgba(255,255,255,0.1)",
+                background: activeCase === c.label ? "rgba(168,85,247,0.2)" : "rgba(255,255,255,0.05)",
+                color: activeCase === c.label ? "#c084fc" : "rgba(255,255,255,0.6)",
                 transition: "all 0.2s",
-                opacity: loading && activeCase !== c.label ? 0.5 : 1,
-                boxShadow: activeCase === c.label ? "0 4px 12px rgba(0,0,0,0.15)" : "none"
+                opacity: loading && activeCase !== c.label ? 0.4 : 1,
+                boxShadow: activeCase === c.label ? "0 0 16px rgba(168,85,247,0.4)" : "none"
               }}
             >
               {c.label}
@@ -145,9 +145,9 @@ export function CounterfactualToggle({ sampleRow, sensitiveColumns, modelData, r
         </div>
 
       {error && (
-        <div style={{ 
+        <div style={{
           marginBottom: 16, padding: "12px 16px", borderRadius: 12,
-          background: "#fef2f2", border: "1px solid #fca5a5", color: "#991b1b",
+          background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", color: "#f87171",
           fontSize: 13, fontWeight: 600
         }}>
           {error}
@@ -156,60 +156,61 @@ export function CounterfactualToggle({ sampleRow, sensitiveColumns, modelData, r
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, position: "relative" }}>
         {loading && (
-          <div style={{ 
-            position: "absolute", inset: 0, background: "rgba(248, 247, 244, 0.7)", 
+          <div style={{
+            position: "absolute", inset: 0, background: "rgba(5,5,15,0.7)",
+            backdropFilter: "blur(8px)", WebkitBackdropFilter: "blur(8px)",
             display: "flex", alignItems: "center", justifyContent: "center", zIndex: 5, borderRadius: 12,
-            fontSize: 14, fontWeight: 700, color: "#000"
+            fontSize: 14, fontWeight: 700, color: "rgba(255,255,255,0.7)"
           }}>
-            Recomputing prediction...
+            ⚡ Recomputing...
           </div>
         )}
 
         {/* Original */}
-        <div style={{ 
-          background: "#fff", border: "1px solid #e8e6e0", borderRadius: 16, padding: 20,
-          opacity: result ? 1 : 0.3
+        <div style={{
+          background: "rgba(255,255,255,0.03)", backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)",
+          border: "1px solid rgba(255,255,255,0.08)", borderRadius: 16, padding: 20, opacity: result ? 1 : 0.3
         }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: "#bbb", letterSpacing: ".06em", marginBottom: 12 }}>
+          <div style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.25)", letterSpacing: ".1em", marginBottom: 12 }}>
             ORIGINAL ({result?.original?.attribute_value || ""})
           </div>
-          <div style={{ fontSize: 32, fontWeight: 800, color: result ? (isApproved(result.original?.prediction) ? "#22c55e" : "#dc2626") : "#ccc" }}>
+          <div style={{ fontSize: 30, fontWeight: 800, color: result ? (isApproved(result.original?.prediction) ? "#10b981" : "#f87171") : "rgba(255,255,255,0.1)" }}>
             {result ? formatPrediction(result.original?.prediction) : "..."}
           </div>
-          <div style={{ fontSize: 13, color: "#aaa", marginTop: 4, fontWeight: 500 }}>
+          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.25)", marginTop: 6, fontWeight: 500 }}>
             {result?.original?.confidence ?? 0}% confidence
           </div>
         </div>
 
         {/* Counterfactual */}
-        <div style={{ 
-          background: result?.outcome_changed ? "#fef2f2" : "#fff", 
-          border: result?.outcome_changed ? "2.5px solid #fca5a5" : "1px solid #e8e6e0",
+        <div style={{
+          background: result?.outcome_changed ? "rgba(239,68,68,0.1)" : "rgba(255,255,255,0.03)",
+          backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)",
+          border: result?.outcome_changed ? "2px solid rgba(239,68,68,0.4)" : "1px solid rgba(255,255,255,0.08)",
           borderRadius: 16, padding: 20, opacity: result ? 1 : 0.3
         }}>
-          <div style={{ fontSize: 10, fontWeight: 700, color: "#bbb", letterSpacing: ".06em", marginBottom: 12 }}>
-            IF {result?.counterfactual?.attribute_value?.toUpperCase() || activeCase.split("→")[1]?.trim()?.toUpperCase() || "FLIPPED"} · same everything else
+          <div style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.25)", letterSpacing: ".1em", marginBottom: 12 }}>
+            IF {result?.counterfactual?.attribute_value?.toUpperCase() || activeCase.split("→")[1]?.trim()?.toUpperCase() || "FLIPPED"}
           </div>
-          <div style={{ fontSize: 32, fontWeight: 800, color: result ? (isApproved(result.counterfactual?.prediction) ? "#22c55e" : "#dc2626") : "#ccc" }}>
+          <div style={{ fontSize: 30, fontWeight: 800, color: result ? (isApproved(result.counterfactual?.prediction) ? "#10b981" : "#f87171") : "rgba(255,255,255,0.1)" }}>
             {result ? formatPrediction(result.counterfactual?.prediction) : "..."}
           </div>
-          <div style={{ fontSize: 13, color: "#aaa", marginTop: 4, fontWeight: 500 }}>
+          <div style={{ fontSize: 12, color: "rgba(255,255,255,0.25)", marginTop: 6, fontWeight: 500 }}>
             {result?.counterfactual?.confidence ?? 0}% confidence
           </div>
         </div>
       </div>
 
       {result && (
-        <div style={{ 
-          marginTop: 20, padding: "14px 20px", borderRadius: 12, 
-          background: result.outcome_changed ? "#fef2f2" : "#f0fdf4",
-          border: `1px solid ${result.outcome_changed ? "#fca5a5" : "#bbf7d0"}`,
-          color: result.outcome_changed ? "#991b1b" : "#166534",
-          fontSize: 14, fontWeight: 700, lineHeight: 1.5
+        <div style={{
+          marginTop: 18, padding: "14px 18px", borderRadius: 12, fontSize: 13, fontWeight: 700, lineHeight: 1.6,
+          background: result.outcome_changed ? "rgba(239,68,68,0.1)" : "rgba(16,185,129,0.1)",
+          border: `1px solid ${result.outcome_changed ? "rgba(239,68,68,0.3)" : "rgba(16,185,129,0.3)"}`,
+          color: result.outcome_changed ? "#f87171" : "#10b981"
         }}>
-          {result.outcome_changed 
-            ? `Outcome changed solely because of ${(result.flip_column || "attribute").toLowerCase()}. Same qualifications, same experience, same everything · only ${(result.flip_column || "attribute").toLowerCase()} is different. This is direct, provable discrimination.`
-            : `Outcome remains unchanged when switching ${(result.flip_column || "attribute").toLowerCase()}. Confidence shifted by ${result.delta_confidence || 0}%. This suggests the model is robust to bias for this specific attribute change.`}
+          {result.outcome_changed
+            ? `Outcome changed solely because of ${(result.flip_column || "attribute").toLowerCase()}. Same qualifications — only ${(result.flip_column || "attribute").toLowerCase()} changed. This is direct, provable discrimination.`
+            : `Outcome unchanged when switching ${(result.flip_column || "attribute").toLowerCase()}. Confidence shifted by ${result.delta_confidence || 0}%. Model appears robust to this attribute.`}
         </div>
       )}
     </div>

@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
+import { Upload, FileCheck, AlertTriangle, Zap, Cpu, ExternalLink } from "@/components/Icons";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -19,12 +20,12 @@ export default function UploadPage() {
   const [decisionCol, setDecisionCol] = useState("");
   const [modelName, setModelName] = useState("Hiring Screening Model v2");
   const [loading, setLoading] = useState(false);
+  const [dragging, setDragging] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
+  const dropRef = useRef<HTMLLabelElement>(null);
 
-  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
-    const picked = e.target.files?.[0];
-    if (!picked) return;
+  async function parseFile(picked: File) {
     setFile(picked);
     setError("");
     setDecisionCol("");
@@ -32,10 +33,20 @@ export default function UploadPage() {
     const firstLine = text.split("\n")[0];
     const cols = firstLine.split(",").map(c => c.trim().replace(/"/g, ""));
     setColumns(cols);
-    
-    // Auto-select 'income' or 'class' if present
     if (cols.includes("income")) setDecisionCol("income");
     else if (cols.includes("class")) setDecisionCol("class");
+  }
+
+  async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const picked = e.target.files?.[0];
+    if (picked) parseFile(picked);
+  }
+
+  function handleDrop(e: React.DragEvent) {
+    e.preventDefault();
+    setDragging(false);
+    const picked = e.dataTransfer.files?.[0];
+    if (picked?.name.endsWith(".csv")) parseFile(picked);
   }
 
   async function handleSubmit() {
@@ -68,7 +79,7 @@ export default function UploadPage() {
       const res = await fetch(`${API_URL}/demo/run`, { method: "POST" });
       const data = await res.json();
       router.push(`/loading/${data.audit_id}`);
-    } catch (err: any) {
+    } catch {
       setError("Could not load demo dataset.");
       setLoading(false);
     }
@@ -77,98 +88,212 @@ export default function UploadPage() {
   const sensitiveDetected = columns.filter(isSensitive);
 
   return (
-    <main style={{ minHeight: "100vh", background: "#f5f4f0", fontFamily: "system-ui, sans-serif" }}>
-      <nav style={{ background: "#fff", borderBottom: "1px solid #e8e6e0", padding: "0 24px", height: 64, display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-        <span style={{ fontSize: 20, fontWeight: 800, color: "#111", letterSpacing: -0.8 }}>
-          Fair<span style={{ color: "#dc2626" }}>Scan</span>
-        </span>
-        <div style={{ display: "flex", gap: 32, alignItems: "center" }}>
-          {/* Nav links removed for cleaner MVP */}
+    <main style={{
+      minHeight: "100vh",
+      background: "linear-gradient(135deg, #05050f 0%, #0d0a1e 40%, #050d1a 100%)",
+      fontFamily: "'Space Grotesk', sans-serif",
+      position: "relative",
+      overflow: "hidden"
+    }}>
+      {/* Floating gradient orbs */}
+      <div style={{ position: "fixed", inset: 0, pointerEvents: "none", zIndex: 0 }}>
+        <div style={{
+          position: "absolute", top: "-10%", left: "-5%",
+          width: 600, height: 600, borderRadius: "50%",
+          background: "radial-gradient(circle, rgba(168,85,247,0.15) 0%, transparent 70%)",
+          animation: "orb-drift 20s ease-in-out infinite"
+        }} />
+        <div style={{
+          position: "absolute", bottom: "-5%", right: "-5%",
+          width: 500, height: 500, borderRadius: "50%",
+          background: "radial-gradient(circle, rgba(6,214,240,0.12) 0%, transparent 70%)",
+          animation: "orb-drift 25s ease-in-out infinite reverse"
+        }} />
+        <div style={{
+          position: "absolute", top: "40%", right: "15%",
+          width: 300, height: 300, borderRadius: "50%",
+          background: "radial-gradient(circle, rgba(236,72,153,0.08) 0%, transparent 70%)",
+          animation: "orb-drift 18s ease-in-out infinite 5s"
+        }} />
+      </div>
+
+      {/* Navbar */}
+      <nav style={{
+        position: "relative", zIndex: 10,
+        background: "rgba(255,255,255,0.03)",
+        backdropFilter: "blur(20px)",
+        WebkitBackdropFilter: "blur(20px)",
+        borderBottom: "1px solid rgba(255,255,255,0.07)",
+        padding: "0 32px", height: 64,
+        display: "flex", alignItems: "center", justifyContent: "space-between"
+      }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+          <div style={{
+            width: 32, height: 32, borderRadius: 8,
+            background: "linear-gradient(135deg, #a855f7, #06d6f0)",
+            display: "flex", alignItems: "center", justifyContent: "center"
+          }}><Cpu size={16} color="#fff" /></div>
+          <span style={{ fontSize: 18, fontWeight: 800, letterSpacing: -0.5 }}>
+            Fair<span style={{ color: "#a855f7" }}>Scan</span>
+          </span>
+        </div>
+        <div style={{
+          display: "flex", alignItems: "center", gap: 8,
+          padding: "6px 14px",
+          background: "rgba(16,185,129,0.1)",
+          border: "1px solid rgba(16,185,129,0.3)",
+          borderRadius: 20, fontSize: 12, fontWeight: 600, color: "#10b981"
+        }}>
+          <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#10b981", animation: "pulse-dot 2s infinite" }} />
+          Google AI Hackathon 2026
         </div>
       </nav>
 
-      <div style={{ textAlign: "center", padding: "64px 24px 44px" }}>
-        <div style={{ display: "inline-flex", alignItems: "center", gap: 8, padding: "6px 14px", background: "#fff", border: "1px solid #e8e6e0", borderRadius: 20, marginBottom: 24, fontSize: 12, fontWeight: 500, color: "#666" }}>
-          <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#22c55e" }} />
-          Google AI Hackathon 2026
+      {/* Hero */}
+      <div style={{ position: "relative", zIndex: 1, textAlign: "center", padding: "72px 24px 48px" }}>
+        <div style={{
+          display: "inline-flex", alignItems: "center", gap: 8,
+          padding: "6px 16px",
+          background: "rgba(168,85,247,0.1)",
+          border: "1px solid rgba(168,85,247,0.3)",
+          borderRadius: 20, marginBottom: 28, fontSize: 12, fontWeight: 600, color: "#c084fc",
+          backdropFilter: "blur(10px)"
+        }}>
+          ✦ 4 AI agents · Gemini 2.0 Flash · Real-time fairness analysis
         </div>
-        <h1 style={{ fontSize: 44, fontWeight: 800, color: "#111", letterSpacing: -1.5, marginBottom: 16, lineHeight: 1.1 }}>
-          Find hidden bias<br />in your <span style={{ color: "#dc2626" }}>AI systems</span>
+
+        <h1 style={{
+          fontSize: "clamp(36px, 6vw, 58px)",
+          fontWeight: 800, lineHeight: 1.08,
+          letterSpacing: -2, marginBottom: 20
+        }}>
+          <span style={{
+            background: "linear-gradient(135deg, #ffffff 0%, #e2b8ff 50%, #06d6f0 100%)",
+            WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text"
+          }}>Find hidden bias</span>
+          <br />
+          <span style={{ color: "rgba(255,255,255,0.5)", fontWeight: 600, fontSize: "0.7em" }}>
+            in your AI decision systems
+          </span>
         </h1>
-        <p style={{ fontSize: 16, color: "#666", maxWidth: 500, margin: "0 auto", lineHeight: 1.6, fontWeight: 450 }}>
-          Upload any decision dataset. Four AI agents find the bias, name the 
-          root cause, flag the law you&apos;re breaking, and show you the fix -- in under 30 seconds.
+
+        <p style={{
+          fontSize: 16, color: "rgba(255,255,255,0.45)",
+          maxWidth: 480, margin: "0 auto", lineHeight: 1.7, fontWeight: 400
+        }}>
+          Upload any dataset. Four AI agents detect bias, name the root cause,
+          flag legal violations, and show you the evidence — in under 30 seconds.
         </p>
       </div>
 
-      <div style={{ background: "#fff", border: "1px solid #e8e6e0", borderRadius: 20, maxWidth: 540, margin: "0 auto", padding: 32, boxShadow: "0 4px 24px rgba(0,0,0,0.02)" }}>
+      {/* Upload Card */}
+      <div style={{
+        position: "relative", zIndex: 1,
+        background: "rgba(255,255,255,0.04)",
+        backdropFilter: "blur(24px)",
+        WebkitBackdropFilter: "blur(24px)",
+        border: "1px solid rgba(255,255,255,0.09)",
+        borderRadius: 24,
+        maxWidth: 560, margin: "0 auto 40px",
+        padding: 36,
+        boxShadow: "0 32px 64px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.1)"
+      }}>
 
-        {/* File Card */}
-        <label htmlFor="csv-upload" style={{ 
-          display: "flex", alignItems: "center", gap: 16, 
-          border: file ? "2px solid #22c55e" : "1px solid #e8e6e0", 
-          borderRadius: 14, padding: "20px", cursor: "pointer", 
-          background: file ? "#f0fdf4" : "#fafaf9", marginBottom: 24,
-          transition: "all 0.2s"
-        }}>
-          <div style={{ width: 44, height: 44, borderRadius: 10, background: file ? "#dcfce7" : "#fff", border: "1px solid #e8e6e0", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 20 }}>
-            {file ? "📄" : "☁️"}
+        {/* Drop Zone */}
+        <label
+          ref={dropRef}
+          htmlFor="csv-upload"
+          onDragOver={e => { e.preventDefault(); setDragging(true); }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={handleDrop}
+          style={{
+            display: "flex", alignItems: "center", gap: 16,
+            border: dragging ? "2px solid #06d6f0" : file ? "2px solid #a855f7" : "1px dashed rgba(255,255,255,0.15)",
+            borderRadius: 16, padding: "20px 24px", cursor: "pointer",
+            background: dragging ? "rgba(6,214,240,0.05)" : file ? "rgba(168,85,247,0.06)" : "rgba(255,255,255,0.02)",
+            marginBottom: 28, transition: "all 0.25s",
+            boxShadow: dragging ? "0 0 0 4px rgba(6,214,240,0.15)" : file ? "0 0 0 4px rgba(168,85,247,0.12)" : "none"
+          }}
+        >
+          <div style={{
+            width: 48, height: 48, borderRadius: 12, flexShrink: 0,
+            background: file ? "rgba(168,85,247,0.2)" : "rgba(255,255,255,0.06)",
+            border: "1px solid rgba(255,255,255,0.1)",
+            display: "flex", alignItems: "center", justifyContent: "center"
+          }}>
+            {file ? <FileCheck size={22} color="#c084fc" /> : <Upload size={20} color="rgba(255,255,255,0.4)" />}
           </div>
           <div style={{ flex: 1 }}>
             {file ? (
               <>
-                <div style={{ fontSize: 15, fontWeight: 700, color: "#166534" }}>{file.name}</div>
-                <div style={{ fontSize: 12, color: "#22c55e", marginTop: 2, fontWeight: 500 }}>
-                  {columns.length} columns found · {(file.size / 1024 / 1024).toFixed(1)} MB
+                <div style={{ fontSize: 14, fontWeight: 700, color: "#c084fc" }}>{file.name}</div>
+                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.4)", marginTop: 3, fontWeight: 500 }}>
+                  {columns.length} columns · {(file.size / 1024 / 1024).toFixed(1)} MB
                 </div>
               </>
             ) : (
               <>
-                <div style={{ fontSize: 15, fontWeight: 700, color: "#111" }}>Drop your dataset here</div>
-                <div style={{ fontSize: 12, color: "#999", marginTop: 2 }}>CSV files only · max 50MB</div>
+                <div style={{ fontSize: 14, fontWeight: 700, color: "rgba(255,255,255,0.85)" }}>
+                  {dragging ? "Drop it here!" : "Drop your dataset here"}
+                </div>
+                <div style={{ fontSize: 12, color: "rgba(255,255,255,0.3)", marginTop: 3 }}>
+                  CSV files only · max 50MB
+                </div>
               </>
             )}
           </div>
-          {file && <span style={{ fontSize: 12, fontWeight: 600, color: "#22c55e" }}>Change</span>}
+          {file && (
+            <span style={{ fontSize: 11, fontWeight: 700, color: "#a855f7", background: "rgba(168,85,247,0.15)", padding: "4px 10px", borderRadius: 8 }}>
+              Change
+            </span>
+          )}
         </label>
         <input id="csv-upload" type="file" accept=".csv" onChange={handleFileChange} style={{ display: "none" }} />
 
-        {/* Column grid */}
+        {/* Column picker */}
         {columns.length > 0 && (
-          <div style={{ marginBottom: 24 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: "#999", letterSpacing: ".06em", marginBottom: 12 }}>
-              WHICH COLUMN IS THE AI&apos;S DECISION? (what your model predicts)
+          <div style={{ marginBottom: 28, animation: "slide-up 0.3s ease" }}>
+            <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.3)", letterSpacing: ".1em", marginBottom: 12 }}>
+              WHICH COLUMN IS THE AI'S DECISION?
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8 }}>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
               {columns.map(col => {
                 const sensitive = isSensitive(col);
                 const selected = decisionCol === col;
                 return (
                   <button key={col} onClick={() => setDecisionCol(col)} style={{
-                    padding: "10px 12px", borderRadius: 10, cursor: "pointer",
-                    border: selected ? "2px solid #dc2626" : sensitive ? "1px solid #e9d5ff" : "1px solid #e8e6e0",
-                    background: selected ? "#fff" : sensitive ? "#faf5ff" : "#fff",
-                    color: selected ? "#dc2626" : sensitive ? "#7e22ce" : "#111",
-                    fontSize: 12, fontWeight: selected ? 700 : 500,
-                    transition: "all 0.15s"
+                    padding: "8px 14px", borderRadius: 10, cursor: "pointer", fontSize: 12, fontWeight: 600,
+                    border: selected
+                      ? "2px solid #06d6f0"
+                      : sensitive
+                      ? "1px solid rgba(168,85,247,0.4)"
+                      : "1px solid rgba(255,255,255,0.1)",
+                    background: selected
+                      ? "rgba(6,214,240,0.15)"
+                      : sensitive
+                      ? "rgba(168,85,247,0.06)"
+                      : "rgba(255,255,255,0.04)",
+                    color: selected ? "#06d6f0" : sensitive ? "#a78bfa" : "rgba(255,255,255,0.6)",
+                    transition: "all 0.15s",
+                    boxShadow: selected ? "0 0 14px rgba(6,214,240,0.35)" : "none"
                   }}>
                     {col} {selected && "✓"}
                   </button>
                 );
               })}
             </div>
-            
             {sensitiveDetected.length > 0 && (
-              <div style={{ 
-                marginTop: 16, display: "flex", alignItems: "center", gap: 12, 
-                padding: "12px 16px", background: "#faf5ff", border: "1px solid #e9d5ff", 
-                borderRadius: 12, fontSize: 12, color: "#7c3aed" 
+              <div style={{
+                marginTop: 14, display: "flex", alignItems: "center", gap: 10,
+                padding: "10px 14px",
+                background: "rgba(168,85,247,0.08)",
+                border: "1px solid rgba(168,85,247,0.25)",
+                borderRadius: 10, fontSize: 12, color: "#c084fc", fontWeight: 500
               }}>
-                <span style={{ fontSize: 14 }}>ⓘ</span>
-                <div style={{ flex: 1, fontWeight: 500 }}>
-                  Auto-detected sensitive columns: <span style={{ fontWeight: 700 }}>{sensitiveDetected.join(", ")}</span>
-                </div>
-                <div style={{ fontSize: 11, fontWeight: 600, opacity: 0.7 }}>-- shown in purple above</div>
+                <AlertTriangle size={13} color="#c084fc" />
+                <span>
+                  Sensitive columns detected: <strong>{sensitiveDetected.join(", ")}</strong> — shown in purple
+                </span>
               </div>
             )}
           </div>
@@ -176,46 +301,122 @@ export default function UploadPage() {
 
         {/* Model name */}
         <div style={{ marginBottom: 24 }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: "#999", letterSpacing: ".06em", marginBottom: 8 }}>MODEL / SYSTEM NAME (for your audit report)</div>
+          <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.3)", letterSpacing: ".1em", marginBottom: 10 }}>
+            MODEL / SYSTEM NAME
+          </div>
           <input
             type="text"
             value={modelName}
             onChange={e => setModelName(e.target.value)}
-            style={{ width: "100%", height: 48, border: "none", background: "#333", borderRadius: 10, padding: "0 16px", fontSize: 15, color: "#fff", outline: "none", boxSizing: "border-box", fontWeight: 500 }}
+            style={{
+              width: "100%", height: 48,
+              border: "1px solid rgba(255,255,255,0.1)",
+              background: "rgba(255,255,255,0.05)",
+              borderRadius: 12, padding: "0 16px",
+              fontSize: 14, color: "#f0f0ff", outline: "none",
+              fontWeight: 500, transition: "border-color 0.2s",
+              fontFamily: "inherit"
+            }}
           />
         </div>
+
+        {/* Error */}
+        {error && (
+          <div style={{
+            marginBottom: 16, padding: "12px 16px", borderRadius: 12, fontSize: 13,
+            background: "rgba(239,68,68,0.1)", border: "1px solid rgba(239,68,68,0.3)", color: "#f87171", fontWeight: 500
+          }}>
+            {error}
+          </div>
+        )}
 
         {/* Submit */}
         <button
           onClick={handleSubmit}
           disabled={loading || !file || !decisionCol}
           style={{
-            width: "100%", height: 52, 
-            background: loading || !file || !decisionCol ? "#f5f5f4" : "#000",
-            border: "none", borderRadius: 14, 
-            color: loading || !file || !decisionCol ? "#a1a1aa" : "#fff", 
-            fontSize: 15, fontWeight: 700, 
+            width: "100%", height: 54, borderRadius: 14, border: "none",
+            background: loading || !file || !decisionCol
+              ? "rgba(255,255,255,0.05)"
+              : "linear-gradient(135deg, #7c3aed, #2563eb)",
+            color: loading || !file || !decisionCol ? "rgba(255,255,255,0.2)" : "#fff",
+            fontSize: 15, fontWeight: 700,
             cursor: loading || !file || !decisionCol ? "not-allowed" : "pointer",
             transition: "all 0.2s",
-            boxShadow: loading || !file || !decisionCol ? "none" : "0 4px 12px rgba(0,0,0,0.1)"
+            boxShadow: loading || !file || !decisionCol
+              ? "none"
+              : "0 8px 32px rgba(124,58,237,0.4), 0 0 0 1px rgba(255,255,255,0.1) inset",
+            letterSpacing: 0.3
           }}
         >
-          {loading ? "Uploading..." : "Run bias audit -- 4 AI agents · ~25 seconds"}
+          <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+            <Zap size={16} color="inherit" />
+            {loading ? "Launching agents..." : "Run bias audit — 4 AI agents · ~25s"}
+          </span>
         </button>
 
-        <div style={{ textAlign: "center", marginTop: 24, fontSize: 13, color: "#aaa" }}>
-          No CSV? <span onClick={runDemo} style={{ color: "#dc2626", cursor: "pointer", fontWeight: 700 }}>Load UCI Adult Income demo dataset</span> -- known gender bias included
+        {/* Demo link */}
+        <div style={{ textAlign: "center", marginTop: 20, fontSize: 13, color: "rgba(255,255,255,0.3)" }}>
+          No dataset?{" "}
+          <span
+            onClick={runDemo}
+            style={{
+              color: "#06d6f0", cursor: "pointer", fontWeight: 700,
+              textDecoration: "none", transition: "color 0.2s",
+              display: "inline-flex", alignItems: "center", gap: 5
+            }}
+          >
+            Load UCI Adult Income demo <ExternalLink size={11} color="#06d6f0" />
+          </span>
+          <span style={{ display: "block", marginTop: 4, fontSize: 11, color: "rgba(255,255,255,0.2)" }}>
+            known gender bias included — great for demo day
+          </span>
         </div>
       </div>
 
-      <div style={{ display: "flex", justifyContent: "center", gap: 32, marginTop: 44, paddingBottom: 44 }}>
-        {[["#22c55e", "EU AI Act compliant output"], ["#3b82f6", "Powered by Google Gemini"], ["#a855f7", "No data stored after audit"], ["#f59e0b", "Results in under 30s"]].map(([color, label]) => (
-          <div key={label as string} style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12, color: "#777", fontWeight: 500 }}>
-            <div style={{ width: 8, height: 8, borderRadius: "50%", background: color as string }} />
+      {/* Feature pills */}
+      <div style={{
+        position: "relative", zIndex: 1,
+        display: "flex", justifyContent: "center", gap: 16,
+        flexWrap: "wrap", paddingBottom: 56, padding: "0 24px 56px"
+      }}>
+        {[
+          ["#a855f7", "EU AI Act output"],
+          ["#06d6f0", "Powered by Gemini"],
+          ["#10b981", "No data stored"],
+          ["#f59e0b", "Results in 30s"]
+        ].map(([color, label]) => (
+          <div key={label} style={{
+            display: "flex", alignItems: "center", gap: 8,
+            fontSize: 12, color: "rgba(255,255,255,0.4)", fontWeight: 500,
+            padding: "6px 14px",
+            background: "rgba(255,255,255,0.03)",
+            border: "1px solid rgba(255,255,255,0.07)",
+            borderRadius: 20
+          }}>
+            <div style={{ width: 6, height: 6, borderRadius: "50%", background: color }} />
             {label}
           </div>
         ))}
       </div>
+
+      <style>{`
+        @keyframes orb-drift {
+          0%, 100% { transform: translate(0, 0) scale(1); }
+          33% { transform: translate(40px, -30px) scale(1.1); }
+          66% { transform: translate(-20px, 20px) scale(0.95); }
+        }
+        @keyframes slide-up {
+          from { opacity:0; transform:translateY(10px); }
+          to   { opacity:1; transform:translateY(0); }
+        }
+        @keyframes pulse-dot {
+          0%, 100% { opacity:1; transform:scale(1); }
+          50% { opacity:0.4; transform:scale(0.8); }
+        }
+        label:hover { border-color: rgba(168,85,247,0.5) !important; }
+        button:not(:disabled):hover { filter: brightness(1.1); transform: translateY(-1px); }
+      `}</style>
     </main>
   );
 }
