@@ -10,7 +10,7 @@ html { font-size: 16px; }
 
 body {
   font-family: 'Space Grotesk', system-ui, -apple-system, sans-serif;
-  background: #05050f;
+  background: #000000;
   color: #f0f0ff;
   -webkit-font-smoothing: antialiased;
   min-height: 100vh;

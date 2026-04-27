@@ -88,7 +88,7 @@ export default function LoadingPage() {
   return (
     <main style={{
       minHeight: "100vh",
-      background: "linear-gradient(135deg, #05050f 0%, #0d0a1e 40%, #050d1a 100%)",
+      background: "#000000",
       fontFamily: "'Space Grotesk', sans-serif",
       position: "relative", overflow: "hidden"
     }}>

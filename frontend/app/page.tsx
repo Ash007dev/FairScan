@@ -90,7 +90,7 @@ export default function UploadPage() {
   return (
     <main style={{
       minHeight: "100vh",
-      background: "linear-gradient(135deg, #05050f 0%, #0d0a1e 40%, #050d1a 100%)",
+      background: "#000000",
       fontFamily: "'Space Grotesk', sans-serif",
       position: "relative",
       overflow: "hidden"
@@ -159,7 +159,7 @@ export default function UploadPage() {
           borderRadius: 20, marginBottom: 28, fontSize: 12, fontWeight: 600, color: "#c084fc",
           backdropFilter: "blur(10px)"
         }}>
-          ✦ 4 AI agents · Gemini 2.0 Flash · Real-time fairness analysis
+          ✦ Powered by Google Gemini · Checks for bias in seconds
         </div>
 
         <h1 style={{
@@ -173,7 +173,7 @@ export default function UploadPage() {
           }}>Find hidden bias</span>
           <br />
           <span style={{ color: "rgba(255,255,255,0.5)", fontWeight: 600, fontSize: "0.7em" }}>
-            in your AI decision systems
+            before you launch your AI
           </span>
         </h1>
 
@@ -181,8 +181,7 @@ export default function UploadPage() {
           fontSize: 16, color: "rgba(255,255,255,0.45)",
           maxWidth: 480, margin: "0 auto", lineHeight: 1.7, fontWeight: 400
         }}>
-          Upload any dataset. Four AI agents detect bias, name the root cause,
-          flag legal violations, and show you the evidence — in under 30 seconds.
+          Upload a dataset to instantly check if your AI is making unfair decisions, find out why, and see if it breaks any laws — all in under 30 seconds.
         </p>
       </div>
 
@@ -254,7 +253,7 @@ export default function UploadPage() {
         {columns.length > 0 && (
           <div style={{ marginBottom: 28, animation: "slide-up 0.3s ease" }}>
             <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.3)", letterSpacing: ".1em", marginBottom: 12 }}>
-              WHICH COLUMN IS THE AI'S DECISION?
+              WHICH COLUMN HAS THE FINAL OUTCOME?
             </div>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
               {columns.map(col => {
@@ -302,7 +301,7 @@ export default function UploadPage() {
         {/* Model name */}
         <div style={{ marginBottom: 24 }}>
           <div style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.3)", letterSpacing: ".1em", marginBottom: 10 }}>
-            MODEL / SYSTEM NAME
+            WHAT IS THE NAME OF YOUR PROJECT?
           </div>
           <input
             type="text"
@@ -351,7 +350,7 @@ export default function UploadPage() {
         >
           <span style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
             <Zap size={16} color="inherit" />
-            {loading ? "Launching agents..." : "Run bias audit — 4 AI agents · ~25s"}
+            {loading ? "Starting analysis..." : "Check for bias"}
           </span>
         </button>
 
@@ -366,10 +365,10 @@ export default function UploadPage() {
               display: "inline-flex", alignItems: "center", gap: 5
             }}
           >
-            Load UCI Adult Income demo <ExternalLink size={11} color="#06d6f0" />
+            Try our demo dataset <ExternalLink size={11} color="#06d6f0" />
           </span>
           <span style={{ display: "block", marginTop: 4, fontSize: 11, color: "rgba(255,255,255,0.2)" }}>
-            known gender bias included — great for demo day
+            it has built-in bias so you can see how it works!
           </span>
         </div>
       </div>
@@ -381,7 +380,7 @@ export default function UploadPage() {
         flexWrap: "wrap", paddingBottom: 56, padding: "0 24px 56px"
       }}>
         {[
-          ["#a855f7", "EU AI Act output"],
+          ["#a855f7", "Checks EU & US Laws"],
           ["#06d6f0", "Powered by Gemini"],
           ["#10b981", "No data stored"],
           ["#f59e0b", "Results in 30s"]

@@ -92,7 +92,7 @@ export default function ResultsPage() {
   }, [auditId, router]);
 
   if (loading) return (
-    <main style={{ minHeight: "100vh", background: "linear-gradient(135deg, #05050f, #0d0a1e)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", fontFamily: "'Space Grotesk', sans-serif" }}>
+    <main style={{ minHeight: "100vh", background: "#000000", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", fontFamily: "'Space Grotesk', sans-serif" }}>
       <div style={{ width: 44, height: 44, borderRadius: "50%", border: "3px solid rgba(255,255,255,0.06)", borderTopColor: "#a855f7", animation: "spin 1s linear infinite", marginBottom: 16 }} />
       <div style={{ fontSize: 13, color: "rgba(255,255,255,0.3)", fontWeight: 500 }}>Finalizing report...</div>
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
@@ -100,7 +100,7 @@ export default function ResultsPage() {
   );
 
   if (error || !result) return (
-    <main style={{ minHeight: "100vh", background: "linear-gradient(135deg, #05050f, #0d0a1e)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 40, fontFamily: "'Space Grotesk', sans-serif" }}>
+    <main style={{ minHeight: "100vh", background: "#000000", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", padding: 40, fontFamily: "'Space Grotesk', sans-serif" }}>
       <div style={{ fontSize: 52, marginBottom: 20 }}>🔄</div>
       <h2 style={{ fontSize: 24, fontWeight: 800, color: "#f0f0ff", marginBottom: 10 }}>Session Expired</h2>
       <p style={{ fontSize: 15, color: "rgba(255,255,255,0.4)", marginBottom: 32, textAlign: "center", maxWidth: 380, lineHeight: 1.7 }}>
@@ -123,12 +123,12 @@ export default function ResultsPage() {
   const SIDEBAR_W = sidebarOpen ? 240 : 68;
 
   return (
-    <main style={{ minHeight: "100vh", background: "linear-gradient(135deg, #05050f 0%, #0d0a1e 50%, #050d1a 100%)", fontFamily: "'Space Grotesk', sans-serif", display: "flex", flexDirection: "column" }}>
+    <main style={{ minHeight: "100vh", background: "#000000", fontFamily: "'Space Grotesk', sans-serif", display: "flex", flexDirection: "column" }}>
 
       {/* ── Top Nav ── */}
       <nav style={{
         position: "fixed", top: 0, left: 0, right: 0, height: 60, zIndex: 100,
-        background: "rgba(5,5,15,0.85)", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)",
+        background: "#000000", backdropFilter: "blur(20px)", WebkitBackdropFilter: "blur(20px)",
         borderBottom: "1px solid rgba(255,255,255,0.07)",
         display: "flex", alignItems: "center", padding: "0 24px", gap: 16
       }}>
@@ -188,7 +188,7 @@ export default function ResultsPage() {
         <aside style={{
           position: "fixed", top: 60, left: 0, bottom: 0,
           width: SIDEBAR_W,
-          background: "rgba(8,8,20,0.8)",
+          background: "#000000",
           backdropFilter: "blur(24px)", WebkitBackdropFilter: "blur(24px)",
           borderRight: "1px solid rgba(255,255,255,0.06)",
           display: "flex", flexDirection: "column",
