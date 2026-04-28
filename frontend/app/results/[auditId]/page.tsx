@@ -132,29 +132,21 @@ export default function ResultsPage() {
         borderBottom: "1px solid rgba(255,255,255,0.07)",
         display: "flex", alignItems: "center", padding: "0 24px", gap: 16
       }}>
-        {/* Sidebar toggle */}
-        <button onClick={() => setSidebarOpen(o => !o)} style={{
-          width: 36, height: 36, borderRadius: 10, border: "1px solid rgba(255,255,255,0.08)",
-          background: "rgba(255,255,255,0.04)", cursor: "pointer", color: "rgba(255,255,255,0.5)",
-          fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
-          transition: "all 0.2s"
-        }}>
-          {sidebarOpen ? <ChevronLeft size={16} /> : <ChevronRight size={16} />}
-        </button>
+
 
         {/* Brand */}
         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-          <div style={{ width: 26, height: 26, borderRadius: 7, background: "linear-gradient(135deg, #a855f7, #06d6f0)", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            <Cpu size={14} color="#fff" />
+          <div style={{ width: 26, height: 26, borderRadius: 7, background: "#fff", display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <Cpu size={14} color="#000" />
           </div>
-          <span style={{ fontSize: 16, fontWeight: 800, letterSpacing: -0.5 }}>Fair<span style={{ color: "#a855f7" }}>Scan</span></span>
+          <span style={{ fontSize: 16, fontWeight: 800, letterSpacing: -0.5, color: "#fff" }}>Fair<span style={{ color: "#fff", opacity: 0.5 }}>Scan</span></span>
         </div>
 
         <div style={{ height: 20, width: 1, background: "rgba(255,255,255,0.08)" }} />
 
         {/* Model name + row count */}
         <span style={{ fontSize: 12, color: "rgba(255,255,255,0.25)", fontWeight: 500, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-          {result.model_name} &nbsp;·&nbsp; {result.stat?.row_count?.toLocaleString()} rows
+          AI-Powered Bias Auditor &nbsp;·&nbsp; {result.stat?.row_count?.toLocaleString()} rows analysed
         </span>
 
         {/* Score pill */}
@@ -199,7 +191,17 @@ export default function ResultsPage() {
           {/* Audit summary strip */}
           {sidebarOpen && (
             <div style={{ padding: "20px 20px 16px", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
-              <div style={{ fontSize: 9, fontWeight: 800, color: "rgba(255,255,255,0.2)", letterSpacing: ".1em", marginBottom: 12 }}>AUDIT SUMMARY</div>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+                <div style={{ fontSize: 9, fontWeight: 800, color: "rgba(255,255,255,0.2)", letterSpacing: ".1em" }}>AUDIT SUMMARY</div>
+                <button onClick={() => setSidebarOpen(false)} style={{
+                  width: 24, height: 24, borderRadius: 6, border: "1px solid rgba(255,255,255,0.08)",
+                  background: "rgba(255,255,255,0.04)", cursor: "pointer", color: "rgba(255,255,255,0.35)",
+                  display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0,
+                  transition: "all 0.2s", padding: 0
+                }}>
+                  <ChevronLeft size={12} />
+                </button>
+              </div>
               <div style={{ display: "flex", gap: 8 }}>
                 {[
                   { val: `${score}`, label: "Score", color: scoreColor },
@@ -212,6 +214,20 @@ export default function ResultsPage() {
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* Expand button when collapsed */}
+          {!sidebarOpen && (
+            <div style={{ padding: "12px 0", display: "flex", justifyContent: "center", borderBottom: "1px solid rgba(255,255,255,0.05)" }}>
+              <button onClick={() => setSidebarOpen(true)} style={{
+                width: 32, height: 32, borderRadius: 8, border: "1px solid rgba(255,255,255,0.08)",
+                background: "rgba(255,255,255,0.04)", cursor: "pointer", color: "rgba(255,255,255,0.35)",
+                display: "flex", alignItems: "center", justifyContent: "center", padding: 0,
+                transition: "all 0.2s"
+              }}>
+                <ChevronRight size={14} />
+              </button>
             </div>
           )}
 
@@ -364,7 +380,7 @@ export default function ResultsPage() {
                     }}>
                       {result.validation_warnings?.length ? "⚠ Quality Warning" : "✓ Cross-validated"}
                     </div>
-                    <div style={{ fontSize: 13, color: "rgba(255,255,255,0.3)" }}>
+                    <div style={{ fontSize: 14, color: "rgba(255,255,255,0.45)", fontWeight: 500 }}>
                       {result.validation_warnings?.length
                         ? `${result.validation_warnings.length} inconsistencies found across agents`
                         : "4 agents agree — zero inconsistencies detected"}
@@ -373,7 +389,7 @@ export default function ResultsPage() {
                   {(result.validation_warnings?.length || 0) > 0 && (
                     <div style={{ paddingTop: 14, borderTop: "1px solid rgba(255,255,255,0.06)", display: "flex", flexDirection: "column", gap: 8 }}>
                       {result.validation_warnings.map((w: any, i: number) => (
-                        <div key={i} style={{ fontSize: 12, color: "rgba(255,255,255,0.35)", display: "flex", gap: 8, lineHeight: 1.6 }}>
+                        <div key={i} style={{ fontSize: 14, color: "rgba(255,255,255,0.5)", display: "flex", gap: 8, lineHeight: 1.7 }}>
                           <span style={{ color: "#f87171", fontWeight: 800 }}>•</span>
                           <span>{w.message?.replace(/--/g, "—")}</span>
                         </div>
