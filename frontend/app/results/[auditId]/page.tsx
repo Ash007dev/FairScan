@@ -10,7 +10,7 @@ import { RootCauseChart } from "@/components/RootCauseChart";
 import { getPdfUrl } from "@/lib/api";
 import {
   LayoutDashboard, BarChart2, GitBranch, Scale, FileText,
-  Zap, BookOpen, ChevronLeft, ChevronRight, Download, ArrowLeft, CheckCircle, AlertTriangle, Cpu
+  Zap, BookOpen, ChevronLeft, ChevronRight, Download, ArrowLeft, CheckCircle, AlertTriangle, Cpu, Wrench
 } from "@/components/Icons";
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -22,7 +22,7 @@ const FALLBACK_ROW: Record<string, any> = {
   "hours-per-week": "45", "native-country": "United-States"
 };
 
-type Section = "overview" | "bias" | "rootcause" | "legal" | "memo" | "counterfactual" | "methodology";
+type Section = "overview" | "bias" | "rootcause" | "legal" | "memo" | "counterfactual" | "methodology" | "remediation";
 
 const NAV_ITEMS: { id: Section; icon: React.ReactNode; label: string; sub?: string }[] = [
   { id: "overview",       icon: <LayoutDashboard size={16} />, label: "Overview",       sub: "Score & summary" },
@@ -31,6 +31,7 @@ const NAV_ITEMS: { id: Section; icon: React.ReactNode; label: string; sub?: stri
   { id: "legal",          icon: <Scale size={16} />,           label: "Legal Risks",    sub: "Violations" },
   { id: "memo",           icon: <FileText size={16} />,        label: "AI Report",      sub: "Compliance memo" },
   { id: "counterfactual", icon: <Zap size={16} />,             label: "Counterfactual", sub: "The demo moment" },
+  { id: "remediation",    icon: <Wrench size={16} />,          label: "Fix It",         sub: "Remediation actions" },
   { id: "methodology",    icon: <BookOpen size={16} />,        label: "Methodology",    sub: "Glossary & metrics" },
 ];
 
@@ -579,6 +580,154 @@ export default function ResultsPage() {
                   modelData={result.root_cause?.model_data || ""}
                   resultsPerGroup={result.stat?.results_per_group || {}}
                 />
+              </div>
+            )}
+
+            {/* ── REMEDIATION / FIX IT ── */}
+            {active === "remediation" && (
+              <div>
+                <SectionLabel>REMEDIATION · FIX IT</SectionLabel>
+                <div style={{ fontSize: 28, fontWeight: 800, letterSpacing: -1, marginBottom: 8, background: "linear-gradient(135deg, #fff, #10b981)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
+                  How to Fix It
+                </div>
+                <p style={{ fontSize: 14, color: "rgba(255,255,255,0.35)", marginBottom: 32, lineHeight: 1.7 }}>
+                  Concrete, ranked actions to reduce bias. Each recommendation includes estimated impact on your fairness score.
+                </p>
+
+                {/* Score projection bar */}
+                {result.remediation && (
+                  <div style={{
+                    background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.2)",
+                    borderRadius: 18, padding: "24px 28px", marginBottom: 24
+                  }}>
+                    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+                      <div>
+                        <div style={{ fontSize: 10, fontWeight: 800, color: "rgba(255,255,255,0.2)", letterSpacing: ".12em", marginBottom: 6 }}>PROJECTED IMPROVEMENT</div>
+                        <div style={{ fontSize: 14, color: "rgba(255,255,255,0.5)", lineHeight: 1.6 }}>
+                          {result.remediation.summary}
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
+                      <div style={{ textAlign: "center" }}>
+                        <div style={{ fontSize: 32, fontWeight: 900, color: scoreColor }}>{result.remediation.current_score}</div>
+                        <div style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.2)", letterSpacing: ".1em" }}>CURRENT</div>
+                      </div>
+                      <div style={{ flex: 1, height: 8, background: "rgba(255,255,255,0.06)", borderRadius: 6, position: "relative", overflow: "hidden" }}>
+                        <div style={{
+                          position: "absolute", left: 0, top: 0, height: 8, borderRadius: 6,
+                          background: "linear-gradient(90deg, " + scoreColor + ", #10b981)",
+                          width: `${Math.min(100, (result.remediation.projected_score / 100) * 100)}%`,
+                          transition: "width 1s ease",
+                          boxShadow: "0 0 12px rgba(16,185,129,0.4)"
+                        }} />
+                      </div>
+                      <div style={{ textAlign: "center" }}>
+                        <div style={{ fontSize: 32, fontWeight: 900, color: "#10b981" }}>{result.remediation.projected_score}</div>
+                        <div style={{ fontSize: 9, fontWeight: 700, color: "rgba(255,255,255,0.2)", letterSpacing: ".1em" }}>PROJECTED</div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Action cards */}
+                {(result.remediation?.actions || []).map((action, i) => {
+                  const catColors: Record<string, string> = {
+                    feature_removal: "#f87171",
+                    data_resampling: "#a855f7",
+                    proxy_audit: "#fbbf24",
+                    post_processing: "#06d6f0",
+                    documentation: "#10b981",
+                  };
+                  const catColor = catColors[action.category] || "#a855f7";
+                  const catLabels: Record<string, string> = {
+                    feature_removal: "Feature Removal",
+                    data_resampling: "Data Resampling",
+                    proxy_audit: "Proxy Audit",
+                    post_processing: "Post-Processing",
+                    documentation: "Compliance",
+                  };
+
+                  return (
+                    <div key={action.id} style={{
+                      background: "rgba(255,255,255,0.03)", border: "1px solid rgba(255,255,255,0.07)",
+                      borderRadius: 18, padding: "24px 28px", marginBottom: 16,
+                      backdropFilter: "blur(20px)", transition: "all 0.3s"
+                    }}>
+                      <div style={{ display: "flex", alignItems: "flex-start", gap: 16 }}>
+                        {/* Priority number */}
+                        <div style={{
+                          width: 36, height: 36, borderRadius: 10, flexShrink: 0,
+                          background: `${catColor}15`, border: `1px solid ${catColor}30`,
+                          display: "flex", alignItems: "center", justifyContent: "center",
+                          fontSize: 16, fontWeight: 900, color: catColor
+                        }}>
+                          {i + 1}
+                        </div>
+
+                        <div style={{ flex: 1 }}>
+                          {/* Category tag */}
+                          <div style={{ marginBottom: 8 }}>
+                            <span style={{
+                              fontSize: 9, fontWeight: 800, letterSpacing: ".1em",
+                              color: catColor, background: `${catColor}15`,
+                              border: `1px solid ${catColor}30`,
+                              padding: "3px 8px", borderRadius: 5
+                            }}>
+                              {(catLabels[action.category] || action.category).toUpperCase()}
+                            </span>
+                          </div>
+
+                          {/* Action title */}
+                          <div style={{ fontSize: 16, fontWeight: 800, color: "rgba(255,255,255,0.85)", marginBottom: 8, lineHeight: 1.4 }}>
+                            {action.action}
+                          </div>
+
+                          {/* Description */}
+                          <div style={{ fontSize: 13, color: "rgba(255,255,255,0.4)", lineHeight: 1.7, marginBottom: 16 }}>
+                            {action.description}
+                          </div>
+
+                          {/* Impact metrics */}
+                          <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+                            <div style={{
+                              background: "rgba(16,185,129,0.1)", border: "1px solid rgba(16,185,129,0.25)",
+                              borderRadius: 8, padding: "6px 12px"
+                            }}>
+                              <span style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.3)" }}>Score: </span>
+                              <span style={{ fontSize: 12, fontWeight: 800, color: "#10b981" }}>{action.estimated_score_change}</span>
+                            </div>
+                            <div style={{
+                              background: "rgba(6,214,240,0.1)", border: "1px solid rgba(6,214,240,0.25)",
+                              borderRadius: 8, padding: "6px 12px"
+                            }}>
+                              <span style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.3)" }}>Gap: </span>
+                              <span style={{ fontSize: 12, fontWeight: 800, color: "#06d6f0" }}>-{action.estimated_gap_closure}</span>
+                            </div>
+                            <div style={{
+                              background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)",
+                              borderRadius: 8, padding: "6px 12px"
+                            }}>
+                              <span style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.3)" }}>Effort: </span>
+                              <span style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.6)", textTransform: "capitalize" }}>{action.effort}</span>
+                            </div>
+                            <div style={{
+                              background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)",
+                              borderRadius: 8, padding: "6px 12px"
+                            }}>
+                              <span style={{ fontSize: 10, fontWeight: 700, color: "rgba(255,255,255,0.3)" }}>Risk: </span>
+                              <span style={{ fontSize: 12, fontWeight: 700, color: "rgba(255,255,255,0.6)", textTransform: "capitalize" }}>{action.risk}</span>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+
+                {(!result.remediation || result.remediation.actions.length === 0) && (
+                  <div style={{ fontSize: 15, color: "#10b981", fontWeight: 700, padding: "20px 0" }}>✓ No remediation needed — model appears fair.</div>
+                )}
               </div>
             )}
 

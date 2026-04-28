@@ -79,7 +79,8 @@ async def create_audit(
             "stat": "idle",
             "root_cause": "idle",
             "legal_mapper": "idle",
-            "report_writer": "idle"
+            "report_writer": "idle",
+            "remediation": "idle"
         },
         "logs": []
     }
@@ -201,7 +202,8 @@ async def run_demo():
             "stat": "idle",
             "root_cause": "idle",
             "legal_mapper": "idle",
-            "report_writer": "idle"
+            "report_writer": "idle",
+            "remediation": "idle"
         },
         "logs": []
     }

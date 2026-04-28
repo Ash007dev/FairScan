@@ -1,5 +1,5 @@
 "use client";
-import { TrendingUp, Microscope, Scale, PenLine } from "@/components/Icons";
+import { TrendingUp, Microscope, Scale, PenLine, Wrench } from "@/components/Icons";
 
 type AgentStatus = "idle" | "running" | "done" | "error";
 
@@ -39,6 +39,14 @@ const AGENTS = [
     icon: <PenLine size={18} />,
     color: "#f59e0b",
     time: "18.3s"
+  },
+  {
+    key: "remediation",
+    label: "Remediation Engine",
+    sub: "Fix-it actions · Estimated impact · Score projections",
+    icon: <Wrench size={18} />,
+    color: "#10b981",
+    time: "1.2s"
   },
 ];
 

@@ -5,6 +5,7 @@ from agents.stat_agent import run_stat_agent
 from agents.root_cause_agent import run_root_cause_agent
 from agents.legal_mapper_agent import run_legal_mapper_agent
 from agents.report_writer_agent import run_report_writer_agent
+from agents.remediation_agent import run_remediation_agent
 
 
 def validate_results(stat_result, root_cause_result, legal_result, report_result):
@@ -164,7 +165,27 @@ async def run_audit(df, decision_column, model_name, audit_id, store):
         }
         log("Compliance memo written", "ok")
 
-    log("All agents complete running cross-agent validation...", "info")
+    # -- Stage 3: run remediation agent (depends on stat + root cause) --
+    update("remediation", "running")
+    log("Stage 3: Generating remediation recommendations...", "info")
+    await asyncio.sleep(0.1)
+
+    try:
+        remediation_result = await run_remediation_agent(stat_result, root_cause_result)
+        update("remediation", "done")
+        log(f"Generated {remediation_result['total_actions']} remediation actions (projected score: {remediation_result['projected_score']}/100)", "ok")
+    except Exception as e:
+        update("remediation", "error")
+        print(f"WARNING: Remediation agent failed: {e}")
+        remediation_result = {
+            "actions": [],
+            "current_score": stat_result["fairness_score"],
+            "projected_score": stat_result["fairness_score"],
+            "total_actions": 0,
+            "summary": "Remediation analysis unavailable."
+        }
+
+    log("All agents complete -- running cross-agent validation...", "info")
     validation_warnings = validate_results(stat_result, root_cause_result, legal_result, report_result)
     log(f"Validation complete: {len(validation_warnings)} inconsistencies found", "ok" if len(validation_warnings) == 0 else "warn")
 
@@ -180,5 +201,6 @@ async def run_audit(df, decision_column, model_name, audit_id, store):
         "root_cause": root_cause_result,
         "legal": legal_result,
         "report": report_result,
+        "remediation": remediation_result,
         "validation_warnings": validation_warnings,
     }

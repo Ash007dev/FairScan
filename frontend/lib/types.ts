@@ -43,6 +43,26 @@ export interface ReportResult {
   fairness_score: number;
 }
 
+export interface RemediationAction {
+  id: string;
+  priority: number;
+  action: string;
+  description: string;
+  estimated_score_change: string;
+  estimated_gap_closure: string;
+  risk: string;
+  effort: string;
+  category: string;
+}
+
+export interface RemediationResult {
+  actions: RemediationAction[];
+  current_score: number;
+  projected_score: number;
+  total_actions: number;
+  summary: string;
+}
+
 export interface AuditResult {
   fairness_score: number;
   model_name: string;
@@ -52,6 +72,7 @@ export interface AuditResult {
   root_cause: RootCauseResult;
   legal: LegalResult;
   report: ReportResult;
+  remediation?: RemediationResult;
   validation_warnings?: { type: string; message: string; severity: string }[];
 }
 

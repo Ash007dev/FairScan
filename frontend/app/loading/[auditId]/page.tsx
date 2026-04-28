@@ -20,7 +20,7 @@ export default function LoadingPage() {
   const router  = useRouter();
 
   const [progress, setProgress] = useState<Record<string, AgentStatus>>({
-    stat: "idle", root_cause: "idle", legal_mapper: "idle", report_writer: "idle"
+    stat: "idle", root_cause: "idle", legal_mapper: "idle", report_writer: "idle", remediation: "idle"
   });
   const [logs, setLogs] = useState<LogEntry[]>([
     { text: `$ fairscan audit id ${auditId?.slice(0, 8) || "..."}`, type: "cmd" }
@@ -82,7 +82,7 @@ export default function LoadingPage() {
   }, [auditId, router]);
 
   const doneCount = Object.values(progress).filter(s => s === "done").length;
-  const pct       = Math.round((doneCount / 4) * 100);
+  const pct       = Math.round((doneCount / 5) * 100);
   const isComplete = pct === 100;
 
   return (
@@ -166,7 +166,7 @@ export default function LoadingPage() {
           borderRadius: 16, padding: "16px 20px", marginBottom: 20
         }}>
           <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 10, fontSize: 12, fontWeight: 600 }}>
-            <span style={{ color: "rgba(255,255,255,0.4)" }}>{doneCount} of 4 agents complete</span>
+            <span style={{ color: "rgba(255,255,255,0.4)" }}>{doneCount} of 5 agents complete</span>
             <span style={{ color: isComplete ? "#10b981" : "#a855f7", fontWeight: 700 }}>
               {isComplete ? "✓ Complete · redirecting..." : `${pct}%`}
             </span>
