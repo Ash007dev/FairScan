@@ -40,7 +40,7 @@ export default function HistoryPage() {
     <main style={{ minHeight: "100vh", background: "#000000", fontFamily: "'Space Grotesk', sans-serif", color: "#f0f0ff", padding: "40px 24px" }}>
       <nav style={{ display: "flex", justifyContent: "space-between", alignItems: "center", maxWidth: 900, margin: "0 auto 40px" }}>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <button onClick={() => router.push("/")} style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, padding: "8px 16px", color: "#fff", cursor: "pointer", fontWeight: 600 }}>
+          <button onClick={() => router.back()} style={{ background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", borderRadius: 10, padding: "8px 16px", color: "#fff", cursor: "pointer", fontWeight: 600 }}>
             ← Back
           </button>
           <h1 style={{ fontSize: 24, fontWeight: 800 }}>Audit History</h1>
