@@ -423,7 +423,7 @@ export default function ResultsPage() {
                   </div>
                   {(result.validation_warnings?.length || 0) > 0 && (
                     <div style={{ paddingTop: 14, borderTop: "1px solid rgba(255,255,255,0.06)", display: "flex", flexDirection: "column", gap: 8 }}>
-                      {result.validation_warnings.map((w: any, i: number) => (
+                      {(result.validation_warnings || []).map((w: any, i: number) => (
                         <div key={i} style={{ fontSize: 14, color: "rgba(255,255,255,0.5)", display: "flex", gap: 8, lineHeight: 1.7 }}>
                           <span style={{ color: "#f87171", fontWeight: 800 }}>•</span>
                           <span>{w.message?.replace(/--/g, " ")}</span>
