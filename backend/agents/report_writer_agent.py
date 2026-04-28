@@ -73,7 +73,7 @@ async def run_report_writer_agent(stat_result: dict, root_cause_result: dict) ->
 
     except Exception as e:
         # Gemini completely failed -- use the f-string fallback so the demo still works
-        print(f"[ReportWriter] Gemini completely failed: {e} -- using f-string fallback")
+        print(f"[ReportWriter] Gemini completely failed: {e} using f-string fallback")
         
         # Format a clean summary of group rates instead of a raw JSON dump
         finding_bullets = [

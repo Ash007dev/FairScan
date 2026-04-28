@@ -83,11 +83,11 @@ async def call_gemini(
                     await asyncio.sleep(RETRY_DELAY)
 
         # Announce the switch to the next model
-        print(f"[{agent_name}] All {model_name} attempts failed -- trying next model...")
+        print(f"[{agent_name}] All {model_name} attempts failed trying next model...")
 
     # If we get here, every model and every retry failed
     raise RuntimeError(
-        f"[{agent_name}] Gemini completely unavailable -- "
+        f"[{agent_name}] Gemini completely unavailable "
         f"tried {MODEL_PRIMARY}, {MODEL_SECONDARY}, and {MODEL_TERTIARY}, "
         f"{MAX_RETRIES} attempts each."
     )

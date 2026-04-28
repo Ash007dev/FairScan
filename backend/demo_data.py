@@ -36,7 +36,7 @@ def get_demo_info() -> dict:
         "decision_column": "class",
         "total_rows": 48842,
         "columns": df.columns.tolist(),
-        "description": "UCI Adult Income dataset -- known gender and race bias",
+        "description": "UCI Adult Income dataset with known gender and race bias",
         "expected_finding": "Female applicants approved at ~11% vs male at ~31%"
     }
 

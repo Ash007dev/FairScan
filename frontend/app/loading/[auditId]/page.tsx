@@ -23,7 +23,7 @@ export default function LoadingPage() {
     stat: "idle", root_cause: "idle", legal_mapper: "idle", report_writer: "idle"
   });
   const [logs, setLogs] = useState<LogEntry[]>([
-    { text: `$ fairscan audit --id ${auditId?.slice(0, 8) || "..."}`, type: "cmd" }
+    { text: `$ fairscan audit id ${auditId?.slice(0, 8) || "..."}`, type: "cmd" }
   ]);
   const [modelName, setModelName] = useState("Hiring Screening Model v2");
   const [error, setError] = useState("");

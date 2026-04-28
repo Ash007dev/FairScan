@@ -181,7 +181,7 @@ def get_demo_sample_row():
 @app.post("/demo/run")
 async def run_demo():
     """One-click demo: loads the built-in UCI Adult dataset and starts an audit.
-    No file upload needed -- perfect for the 'Try Demo' button on the frontend."""
+    No file upload needed perfect for the 'Try Demo' button on the frontend."""
     from demo_data import get_demo_dataframe
 
     try:

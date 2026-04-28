@@ -52,7 +52,7 @@ def test_endpoints():
     assert res_pdf.headers['Content-Type'] == 'application/pdf', "Not returning valid PDF!"
     print("   -> Success! PDF logic handles payload properly and returns binary blob.")
 
-    print("\n--- ALL ENDPOINTS TESTED PERFECTLY! THE BACKEND IS BULLETPROOF! ---")
+    print("\n ALL ENDPOINTS TESTED PERFECTLY! THE BACKEND IS BULLETPROOF! ")
 
 if __name__ == "__main__":
     test_endpoints()

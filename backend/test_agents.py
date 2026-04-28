@@ -34,7 +34,7 @@ async def main():
     }
     
     # 2. Test Legal Mapper
-    print("--- 1. Testing Legal Mapper Agent ---\n")
+    print(" 1. Testing Legal Mapper Agent \n")
     legal_output = await run_legal_mapper_agent(fake_stat_result, fake_root_cause_result)
     
     violations = legal_output.get("violations", [])
@@ -63,7 +63,7 @@ async def main():
         
     # 3. Test Report Writer
     print("====================================")
-    print("--- 2. Testing Report Writer Agent ---\n")
+    print(" 2. Testing Report Writer Agent \n")
     report_output = await run_report_writer_agent(fake_stat_result, fake_root_cause_result)
     print("Generated Memo:\n")
     print(report_output)

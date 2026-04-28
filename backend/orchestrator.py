@@ -164,7 +164,7 @@ async def run_audit(df, decision_column, model_name, audit_id, store):
         }
         log("Compliance memo written", "ok")
 
-    log("All agents complete -- running cross-agent validation...", "info")
+    log("All agents complete running cross-agent validation...", "info")
     validation_warnings = validate_results(stat_result, root_cause_result, legal_result, report_result)
     log(f"Validation complete: {len(validation_warnings)} inconsistencies found", "ok" if len(validation_warnings) == 0 else "warn")
 

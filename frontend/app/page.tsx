@@ -181,7 +181,7 @@ export default function UploadPage() {
           fontSize: 16, color: "rgba(255,255,255,0.45)",
           maxWidth: 480, margin: "0 auto", lineHeight: 1.7, fontWeight: 400
         }}>
-          Upload a dataset to instantly check if your AI is making unfair decisions, find out why, and see if it breaks any laws — all in under 30 seconds.
+          Upload a dataset to instantly check if your AI is making unfair decisions, find out why, and see if it breaks any laws all in under 30 seconds.
         </p>
       </div>
 
@@ -291,7 +291,7 @@ export default function UploadPage() {
               }}>
                 <AlertTriangle size={13} color="#c084fc" />
                 <span>
-                  Sensitive columns detected: <strong>{sensitiveDetected.join(", ")}</strong> — shown in purple
+                  Sensitive columns detected: <strong>{sensitiveDetected.join(", ")}</strong> shown in purple
                 </span>
               </div>
             )}
