@@ -190,8 +190,21 @@ async def run_demo():
     except Exception:
         raise HTTPException(status_code=500, detail="Could not load demo dataset.")
 
-    df = df.head(50000)
-    decision_column = "class"
+    # Keep demo snappy (uploaded audits are capped to 20k too)
+    df = df.head(20000)
+
+    # Support both dataset variants:
+    # - OpenML-style: label column is "class"
+    # - Bundled CSV (repo root adult.csv): label column is "income"
+    if "income" in df.columns:
+        decision_column = "income"
+    elif "class" in df.columns:
+        decision_column = "class"
+    else:
+        raise HTTPException(
+            status_code=500,
+            detail=f"Demo dataset missing label column. Expected 'income' or 'class'. Found: {df.columns.tolist()}"
+        )
     model_name = "Hiring Screening Model v2"
 
     audit_id = str(uuid.uuid4())
