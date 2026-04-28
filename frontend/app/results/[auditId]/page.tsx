@@ -68,6 +68,32 @@ export default function ResultsPage() {
         const data: AuditStatus = await res.json();
         if (data.status === "complete" && data.result) {
           setResult(data.result);
+          // Save to history
+          try {
+            const history = JSON.parse(localStorage.getItem("fairscan_history") || "[]");
+            if (!history.some((h: any) => h.audit_id === auditId)) {
+              let dp_diff = "N/A";
+              if (data.result.stat?.results_per_group) {
+                for (const val of Object.values(data.result.stat.results_per_group)) {
+                  if ((val as any).demographic_parity_difference !== undefined) {
+                    dp_diff = Number((val as any).demographic_parity_difference).toFixed(4);
+                    break;
+                  }
+                }
+              }
+              const newEntry = {
+                audit_id: auditId,
+                model_name: data.result.model_name || "Unknown Model",
+                timestamp: Date.now(),
+                fairness_score: data.result.fairness_score,
+                violation_count: data.result.legal?.violations?.length || 0,
+                dp_diff,
+                row_count: data.result.stat?.row_count || 0
+              };
+              history.unshift(newEntry);
+              localStorage.setItem("fairscan_history", JSON.stringify(history.slice(0, 5))); // Keep last 5
+            }
+          } catch (e) {}
         } else if (data.status === "running") {
           router.push(`/loading/${auditId}`); return;
         } else if (data.status === "error") {
@@ -292,7 +318,15 @@ export default function ResultsPage() {
 
           {/* Bottom footer in sidebar */}
           {sidebarOpen && (
-            <div style={{ padding: "16px 20px", borderTop: "1px solid rgba(255,255,255,0.05)" }}>
+            <div style={{ padding: "16px 20px", borderTop: "1px solid rgba(255,255,255,0.05)", display: "flex", flexDirection: "column", gap: 10 }}>
+              <button onClick={() => router.push("/history")} style={{
+                width: "100%", padding: "9px 0", borderRadius: 10, border: "1px solid rgba(168,85,247,0.3)",
+                background: "rgba(168,85,247,0.1)", color: "#c084fc",
+                fontSize: 12, fontWeight: 600, cursor: "pointer",
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 6
+              }}>
+                History / Compare
+              </button>
               <button onClick={() => router.push("/")} style={{
                 width: "100%", padding: "9px 0", borderRadius: 10, border: "1px solid rgba(255,255,255,0.08)",
                 background: "rgba(255,255,255,0.03)", color: "rgba(255,255,255,0.35)",
